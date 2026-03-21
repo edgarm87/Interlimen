@@ -1,0 +1,12 @@
+@page "/cases"
+@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize]
+
+<PageTitle>Case Search — Meridian</PageTitle>
+<MudText Typo="Typo.h4" Class="mb-1">Case Search</MudText>
+<MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-6">
+    Search individual immigration court cases
+</MudText>
+<MudAlert Severity="Severity.Info">
+    Case search will be available when EOIR case data is imported.
+</MudAlert>

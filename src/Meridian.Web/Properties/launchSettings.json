@@ -1,0 +1,14 @@
+{
+  "profiles": {
+    "Meridian": {
+      "commandName": "Project",
+      "dotnetRunMessages": true,
+      "launchBrowser": true,
+      "applicationUrl": "http://localhost:5217",
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development",
+        "DOTNET_RUNTIME_ID": "osx-arm64"
+      }
+    }
+  }
+}

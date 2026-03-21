@@ -1,0 +1,131 @@
+@page "/account/register"
+@rendermode @(new InteractiveServerRenderMode(prerender: false))
+@using Meridian.Web.Components.Layout
+@layout AuthLayout
+@inject Meridian.Web.Services.AuthService AuthService
+@inject NavigationManager Nav
+
+<PageTitle>Start Free Trial — Meridian</PageTitle>
+
+<MudCard Elevation="4" Class="login-card" Style="max-width:500px">
+    <MudCardContent>
+        <MudText Typo="Typo.h5" Align="Align.Center" Class="mb-1">
+            Start Your Free Trial
+        </MudText>
+        <MudText Typo="Typo.body2" Align="Align.Center"
+                 Color="Color.Secondary" Class="mb-4">
+            14 days free — no credit card required
+        </MudText>
+
+        @if (!string.IsNullOrEmpty(_errorMessage))
+        {
+            <MudAlert Severity="Severity.Error" Class="mb-4">
+                @_errorMessage
+            </MudAlert>
+        }
+
+        @if (_success)
+        {
+            <MudAlert Severity="Severity.Success" Class="mb-4">
+                Account created! You can now sign in.
+            </MudAlert>
+        }
+
+        <MudTextField @bind-Value="_orgName"
+                      Label="Organization / Firm Name"
+                      Variant="Variant.Outlined"
+                      Class="mb-3"
+                      Disabled="_loading" />
+
+        <MudGrid>
+            <MudItem xs="6">
+                <MudTextField @bind-Value="_firstName"
+                              Label="First Name"
+                              Variant="Variant.Outlined"
+                              Disabled="_loading" />
+            </MudItem>
+            <MudItem xs="6">
+                <MudTextField @bind-Value="_lastName"
+                              Label="Last Name"
+                              Variant="Variant.Outlined"
+                              Disabled="_loading" />
+            </MudItem>
+        </MudGrid>
+
+        <MudTextField @bind-Value="_email"
+                      Label="Work Email"
+                      InputType="InputType.Email"
+                      Variant="Variant.Outlined"
+                      Class="mt-3 mb-3"
+                      Disabled="_loading" />
+
+        <MudTextField @bind-Value="_password"
+                      Label="Password (min 8 characters)"
+                      InputType="InputType.Password"
+                      Variant="Variant.Outlined"
+                      Class="mb-4"
+                      Disabled="_loading" />
+
+        <MudButton Variant="Variant.Filled"
+                   Color="Color.Primary"
+                   FullWidth="true"
+                   Size="Size.Large"
+                   OnClick="HandleRegister"
+                   Disabled="_loading"
+                   Class="mb-3">
+            @if (_loading)
+            {
+                <MudProgressCircular Size="Size.Small"
+                                     Indeterminate="true"
+                                     Class="mr-2" />
+            }
+            Create Account
+        </MudButton>
+
+        <MudText Align="Align.Center" Typo="Typo.body2">
+            Already have an account?
+            <MudLink Href="/account/login">Sign in</MudLink>
+        </MudText>
+    </MudCardContent>
+</MudCard>
+
+@code {
+    private string _orgName = "";
+    private string _firstName = "";
+    private string _lastName = "";
+    private string _email = "";
+    private string _password = "";
+    private string _errorMessage = "";
+    private bool _loading = false;
+    private bool _success = false;
+
+    private async Task HandleRegister()
+    {
+        _errorMessage = "";
+        _success = false;
+
+        if (string.IsNullOrWhiteSpace(_orgName) ||
+            string.IsNullOrWhiteSpace(_email) ||
+            string.IsNullOrWhiteSpace(_password))
+        {
+            _errorMessage = "Please fill out all required fields.";
+            return;
+        }
+
+        _loading = true;
+        var result = await AuthService.RegisterAsync(
+            _orgName, _firstName, _lastName, _email, _password);
+        _loading = false;
+
+        if (result.IsSuccess)
+        {
+            _success = true;
+            await Task.Delay(1500);
+            Nav.NavigateTo("/account/login");
+        }
+        else
+        {
+            _errorMessage = result.Error ?? "Registration failed.";
+        }
+    }
+}

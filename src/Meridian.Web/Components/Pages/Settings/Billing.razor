@@ -1,0 +1,12 @@
+@page "/settings/billing"
+@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize]
+
+<PageTitle>Billing — Meridian</PageTitle>
+<MudText Typo="Typo.h4" Class="mb-1">Billing</MudText>
+<MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-6">
+    Manage your subscription and payment details
+</MudText>
+<MudAlert Severity="Severity.Info">
+    Billing management via Stripe is coming in the next update.
+</MudAlert>

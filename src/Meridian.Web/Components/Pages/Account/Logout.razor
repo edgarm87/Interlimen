@@ -1,0 +1,41 @@
+@page "/account/logout"
+@using Meridian.Web.Components.Layout
+@layout AuthLayout
+
+<PageTitle>Sign Out — Meridian</PageTitle>
+
+<MudCard Elevation="4" Class="login-card">
+    <MudCardContent>
+        <div class="d-flex justify-center mb-4">
+            <MudIcon Icon="@Icons.Material.Filled.Logout"
+                     Color="Color.Primary"
+                     Size="Size.Large" />
+        </div>
+        <MudText Typo="Typo.h6" Align="Align.Center" Class="mb-2">
+            Sign out of Meridian?
+        </MudText>
+        <MudText Typo="Typo.body2" Align="Align.Center"
+                 Color="Color.Secondary" Class="mb-6">
+            You will be redirected to the login page.
+        </MudText>
+
+        <form method="post" action="/auth/logout">
+            <AntiforgeryToken />
+            <MudButton ButtonType="ButtonType.Submit"
+                       Variant="Variant.Filled"
+                       Color="Color.Primary"
+                       FullWidth="true"
+                       Size="Size.Large"
+                       Class="mb-3">
+                Sign Out
+            </MudButton>
+        </form>
+
+        <MudButton Variant="Variant.Text"
+                   Color="Color.Secondary"
+                   FullWidth="true"
+                   Href="/">
+            Cancel
+        </MudButton>
+    </MudCardContent>
+</MudCard>

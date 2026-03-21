@@ -1,0 +1,160 @@
+@page "/removals/nationality"
+@using Microsoft.AspNetCore.Authorization
+@using Meridian.Application.Features.Removals
+@rendermode @(new InteractiveServerRenderMode(prerender: false))
+@attribute [Authorize]
+@inject IMediator Mediator
+
+<PageTitle>Removals by Nationality — Meridian</PageTitle>
+
+<MudText Typo="Typo.h4" Class="mb-1">Removals by Nationality</MudText>
+<MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-4">
+    Noncitizen removals by criminal status and country — FY2013 to FY2022
+</MudText>
+
+<MudPaper Class="pa-4 mb-4" Elevation="1">
+    <MudGrid>
+        <MudItem xs="12" md="4">
+            <MudText Typo="Typo.caption" Color="Color.Secondary">Fiscal Year</MudText>
+            <select style="width:100%; padding:12px; border:1px solid #ccc; border-radius:4px; font-size:14px; margin-top:4px"
+                    @onchange="OnYearChanged">
+                @foreach (var year in _years)
+                {
+                    <option value="@year" selected="@(year == _selectedYear)">FY@(year)</option>
+                }
+            </select>
+        </MudItem>
+        <MudItem xs="12" md="4">
+            <MudText Typo="Typo.caption" Color="Color.Secondary">Search country</MudText>
+            <input type="text"
+                   placeholder="e.g. Mexico"
+                   style="width:100%; padding:12px; border:1px solid #ccc; border-radius:4px; font-size:14px; margin-top:4px; box-sizing:border-box"
+                   @oninput="OnSearchChanged" />
+        </MudItem>
+        <MudItem xs="12" md="3">
+            <MudText Typo="Typo.caption" Color="Color.Secondary">Sort by</MudText>
+            <select style="width:100%; padding:12px; border:1px solid #ccc; border-radius:4px; font-size:14px; margin-top:4px"
+                    @onchange="OnSortChanged">
+                <option value="total_desc" selected="@(_sortBy == "total_desc")">Highest Total</option>
+                <option value="criminal_desc" selected="@(_sortBy == "criminal_desc")">Highest Criminal</option>
+                <option value="name_asc" selected="@(_sortBy == "name_asc")">Country A-Z</option>
+            </select>
+        </MudItem>
+    </MudGrid>
+</MudPaper>
+
+@if (_loading)
+{
+    <MudProgressLinear Indeterminate="true" Color="Color.Primary" Class="mb-4" />
+}
+else
+{
+    <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-2">
+        Showing @_filtered.Count countries ·
+        @_filtered.Sum(x => x.TotalRemovals).ToString("N0") total removals
+    </MudText>
+
+    <MudTable Items="_filtered" Dense="false" Hover="true" Striped="true"
+              RowsPerPage="25" Elevation="2">
+        <HeaderContent>
+            <MudTh>Country</MudTh>
+            <MudTh Style="text-align:right">Total Removals</MudTh>
+            <MudTh Style="text-align:right">Criminal</MudTh>
+            <MudTh Style="text-align:right">Non-Criminal</MudTh>
+            <MudTh Style="text-align:right">Criminal %</MudTh>
+        </HeaderContent>
+        <RowTemplate>
+            <MudTd>@context.NationalityDisplay</MudTd>
+            <MudTd Style="text-align:right">
+                <strong>@context.TotalRemovals.ToString("N0")</strong>
+            </MudTd>
+            <MudTd Style="text-align:right">
+                <MudText Color="Color.Error">
+                    @context.CriminalRemovals.ToString("N0")
+                </MudText>
+            </MudTd>
+            <MudTd Style="text-align:right">
+                @context.NonCriminalRemovals.ToString("N0")
+            </MudTd>
+            <MudTd Style="text-align:right">
+                @{
+                    var pct = context.TotalRemovals > 0
+                        ? (decimal)context.CriminalRemovals / context.TotalRemovals * 100
+                        : 0;
+                }
+                <MudChip T="string" Size="Size.Small"
+                         Color="@(pct > 50 ? Color.Error : Color.Default)">
+                    @pct.ToString("F1")%
+                </MudChip>
+            </MudTd>
+        </RowTemplate>
+        <PagerContent>
+            <MudTablePager PageSizeOptions="new int[]{25, 50, 100}" />
+        </PagerContent>
+    </MudTable>
+}
+
+@code {
+    private bool _loading = true;
+    private int _selectedYear = 2022;
+    private string _searchCountry = "";
+    private string _sortBy = "total_desc";
+
+    private List<int> _years = Enumerable.Range(2013, 10).Reverse().ToList();
+    private List<RemovalByNationalityDto> _allData = new();
+    private List<RemovalByNationalityDto> _filtered = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadData();
+    }
+
+    private async Task OnYearChanged(ChangeEventArgs e)
+    {
+        if (int.TryParse(e.Value?.ToString(), out var year))
+        {
+            _selectedYear = year;
+            await LoadData();
+        }
+    }
+
+    private void OnSearchChanged(ChangeEventArgs e)
+    {
+        _searchCountry = e.Value?.ToString() ?? "";
+        FilterData();
+        StateHasChanged();
+    }
+    
+    private void OnSortChanged(ChangeEventArgs e)
+    {
+        _sortBy = e.Value?.ToString() ?? "total_desc";
+        FilterData();
+        StateHasChanged();
+    }
+
+    private async Task LoadData()
+    {
+        _loading = true;
+        StateHasChanged();
+        _allData = await Mediator.Send(new GetAllRemovalsByYear(_selectedYear));
+        FilterData();
+        _loading = false;
+        StateHasChanged();
+    }
+
+    private void FilterData()
+    {
+        var q = _allData.AsQueryable();
+
+        if (!string.IsNullOrWhiteSpace(_searchCountry))
+            q = q.Where(x => x.NationalityDisplay
+                .Contains(_searchCountry, StringComparison.OrdinalIgnoreCase));
+
+        _filtered = _sortBy switch
+        {
+            "criminal_desc" => q.OrderByDescending(x => x.CriminalRemovals).ToList(),
+            "name_asc" => q.OrderBy(x => x.NationalityDisplay).ToList(),
+            _ => q.OrderByDescending(x => x.TotalRemovals).ToList()
+        };
+    }
+}

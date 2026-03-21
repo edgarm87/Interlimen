@@ -1,0 +1,142 @@
+@page "/"
+@using Microsoft.AspNetCore.Authorization
+@using Meridian.Application.Features.Removals
+@rendermode @(new InteractiveServerRenderMode(prerender: false))
+@attribute [Authorize]
+@inject IMediator Mediator
+
+<PageTitle>Dashboard — Meridian</PageTitle>
+
+<MudText Typo="Typo.h4" Class="mb-1">Dashboard</MudText>
+<MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-6">
+    Immigration enforcement data — FY2013 to FY2022
+</MudText>
+
+@if (_loading)
+{
+    <MudProgressLinear Indeterminate="true" Color="Color.Primary" Class="mb-4" />
+}
+
+<MudGrid>
+    <MudItem xs="12" sm="6" md="3">
+        <StatCard Title="Total Removals (2022)"
+                  Value="@_totalRemovals2022.ToString("N0")"
+                  Icon="@Icons.Material.Filled.FlightTakeoff"
+                  Color="Color.Error" />
+    </MudItem>
+    <MudItem xs="12" sm="6" md="3">
+        <StatCard Title="Criminal Removals (2022)"
+                  Value="@_criminalRemovals2022.ToString("N0")"
+                  Icon="@Icons.Material.Filled.Gavel"
+                  Color="Color.Warning" />
+    </MudItem>
+    <MudItem xs="12" sm="6" md="3">
+        <StatCard Title="Countries in Dataset"
+                  Value="@_countriesCount.ToString()"
+                  Icon="@Icons.Material.Filled.Flag"
+                  Color="Color.Info" />
+    </MudItem>
+    <MudItem xs="12" sm="6" md="3">
+        <StatCard Title="Years of Data"
+                  Value="10"
+                  Icon="@Icons.Material.Filled.CalendarMonth"
+                  Color="Color.Success" />
+    </MudItem>
+</MudGrid>
+
+<MudGrid Class="mt-4">
+    <MudItem xs="12" md="6">
+        <MudCard>
+            <MudCardHeader>
+                <CardHeaderContent>
+                    <MudText Typo="Typo.h6">Top Nationalities by Removals (2022)</MudText>
+                    <MudText Typo="Typo.body2" Color="Color.Secondary">
+                        Source: DHS OHSS Yearbook Table 42
+                    </MudText>
+                </CardHeaderContent>
+                <CardHeaderActions>
+                    <MudButton Variant="Variant.Text" Color="Color.Primary"
+                               Href="/removals/nationality">View All</MudButton>
+                </CardHeaderActions>
+            </MudCardHeader>
+            <MudCardContent>
+                @foreach (var item in _topNationalities)
+                {
+                    <div class="mb-3">
+                        <div class="d-flex justify-space-between mb-1">
+                            <MudText Typo="Typo.body2">@item.NationalityDisplay</MudText>
+                            <MudText Typo="Typo.body2" Color="Color.Secondary">
+                                @item.TotalRemovals.ToString("N0")
+                            </MudText>
+                        </div>
+                        <MudProgressLinear Value="@((double)item.PercentOfTotal)"
+                                           Color="Color.Primary"
+                                           Size="Size.Medium" />
+                        <MudText Typo="Typo.caption" Color="Color.Secondary">
+                            @item.PercentOfTotal.ToString("F1")% of all removals
+                        </MudText>
+                    </div>
+                }
+            </MudCardContent>
+        </MudCard>
+    </MudItem>
+
+    <MudItem xs="12" md="6">
+        <MudCard>
+            <MudCardHeader>
+                <CardHeaderContent>
+                    <MudText Typo="Typo.h6">Total Removals by Fiscal Year</MudText>
+                    <MudText Typo="Typo.body2" Color="Color.Secondary">
+                        FY2013 — FY2022
+                    </MudText>
+                </CardHeaderContent>
+            </MudCardHeader>
+            <MudCardContent>
+                <MudTable Items="_yearlyTotals" Dense="true" Hover="true" Striped="true">
+                    <HeaderContent>
+                        <MudTh>Year</MudTh>
+                        <MudTh Style="text-align:right">Total</MudTh>
+                        <MudTh Style="text-align:right">Criminal</MudTh>
+                        <MudTh Style="text-align:right">Non-Criminal</MudTh>
+                    </HeaderContent>
+                    <RowTemplate>
+                        <MudTd>FY@(context.Year)</MudTd>
+                        <MudTd Style="text-align:right">@context.TotalRemovals.ToString("N0")</MudTd>
+                        <MudTd Style="text-align:right">
+                            <MudText Color="Color.Error">@context.CriminalRemovals.ToString("N0")</MudText>
+                        </MudTd>
+                        <MudTd Style="text-align:right">@context.NonCriminalRemovals.ToString("N0")</MudTd>
+                    </RowTemplate>
+                </MudTable>
+            </MudCardContent>
+        </MudCard>
+    </MudItem>
+</MudGrid>
+
+@code {
+    private bool _loading = true;
+    private int _totalRemovals2022 = 0;
+    private int _criminalRemovals2022 = 0;
+    private int _countriesCount = 0;
+    private List<NationalityRankingDto> _topNationalities = new();
+    private List<YearlyRemovalTotalDto> _yearlyTotals = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        _loading = true;
+        try
+        {
+            _topNationalities = await Mediator.Send(new GetTopNationalities(8, 2022));
+            _yearlyTotals = await Mediator.Send(new GetYearlyRemovalTotals());
+
+            var fy2022 = _yearlyTotals.FirstOrDefault(y => y.Year == 2022);
+            _totalRemovals2022 = fy2022?.TotalRemovals ?? 0;
+            _criminalRemovals2022 = fy2022?.CriminalRemovals ?? 0;
+            _countriesCount = _topNationalities.Count > 0 ? 145 : 0;
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+}

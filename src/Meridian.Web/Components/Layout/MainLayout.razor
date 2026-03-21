@@ -1,0 +1,66 @@
+@inherits LayoutComponentBase
+@using Microsoft.AspNetCore.Components.Authorization
+
+<MudThemeProvider Theme="_theme" />
+<MudDialogProvider />
+<MudSnackbarProvider />
+<MudPopoverProvider />
+
+<AuthorizeView>
+    <Authorized>
+        <MudLayout>
+            <MudAppBar Elevation="1" Dense="true">
+                <MudIconButton Icon="@Icons.Material.Filled.Menu"
+                               Color="Color.Inherit"
+                               Edge="Edge.Start"
+                               OnClick="@ToggleDrawer" />
+                <MudText Typo="Typo.h6" Class="ml-3">Meridian</MudText>
+                <MudSpacer />
+                <MudIconButton Icon="@Icons.Material.Filled.Notifications"
+                               Color="Color.Inherit" />
+                <MudIconButton Icon="@Icons.Material.Filled.AccountCircle"
+                               Color="Color.Inherit" />
+            </MudAppBar>
+
+            <MudDrawer @bind-Open="_drawerOpen"
+                       Elevation="2"
+                       ClipMode="DrawerClipMode.Always">
+                <MudDrawerHeader>
+                    <MudText Typo="Typo.subtitle1" Class="mt-2 font-weight-bold">
+                        @context.User.Identity?.Name
+                    </MudText>
+                </MudDrawerHeader>
+                <NavMenu />
+            </MudDrawer>
+
+            <MudMainContent>
+                <MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="mt-4 px-4">
+                    @Body
+                </MudContainer>
+            </MudMainContent>
+        </MudLayout>
+    </Authorized>
+    <NotAuthorized>
+        @Body
+    </NotAuthorized>
+</AuthorizeView>
+
+@code {
+    private bool _drawerOpen = true;
+
+#pragma warning disable CS0618
+    private MudTheme _theme = new MudTheme()
+    {
+        Palette = new Palette()
+        {
+            Primary = "#1B4F72",
+            Secondary = "#2E86C1",
+            AppbarBackground = "#1B4F72",
+            Background = "#F4F6F9",
+            Surface = "#FFFFFF",
+        }
+    };
+#pragma warning restore CS0618
+
+    private void ToggleDrawer() => _drawerOpen = !_drawerOpen;
+}

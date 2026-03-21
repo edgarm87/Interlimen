@@ -1,0 +1,23 @@
+@inherits LayoutComponentBase
+
+<MudThemeProvider />
+<MudDialogProvider />
+<MudSnackbarProvider />
+
+<MudLayout>
+    <MudMainContent>
+        <MudContainer MaxWidth="MaxWidth.Small"
+                      Class="d-flex flex-column align-center justify-center"
+                      Style="min-height:100vh">
+            @Body
+        </MudContainer>
+    </MudMainContent>
+</MudLayout>
+
+<style>
+    .login-card {
+        width: 100%;
+        max-width: 420px;
+        padding: 8px;
+    }
+</style>

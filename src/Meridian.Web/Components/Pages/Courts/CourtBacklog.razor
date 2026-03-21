@@ -1,0 +1,12 @@
+@page "/courts/backlog"
+@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize]
+
+<PageTitle>Court Backlog — Meridian</PageTitle>
+<MudText Typo="Typo.h4" Class="mb-1">Court Backlog</MudText>
+<MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-6">
+    Pending case counts and average wait times by court
+</MudText>
+<MudAlert Severity="Severity.Info">
+    Court backlog data will be available when EOIR judge data is imported.
+</MudAlert>

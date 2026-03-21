@@ -1,0 +1,74 @@
+@rendermode @(new InteractiveServerRenderMode(prerender: false))
+<MudNavMenu>
+    <MudNavLink Href="/" Match="NavLinkMatch.All"
+                Icon="@Icons.Material.Filled.Dashboard">
+        Dashboard
+    </MudNavLink>
+
+    <MudNavGroup Title="Courts & Judges"
+                 Icon="@Icons.Material.Filled.Gavel"
+                 Expanded="true">
+        <MudNavLink Href="/judges"
+                    Icon="@Icons.Material.Filled.Person">
+            Judge Analytics
+        </MudNavLink>
+        <MudNavLink Href="/courts/backlog"
+                    Icon="@Icons.Material.Filled.HourglassEmpty">
+            Court Backlog
+        </MudNavLink>
+        <MudNavLink Href="/cases"
+                    Icon="@Icons.Material.Filled.Folder">
+            Case Search
+        </MudNavLink>
+    </MudNavGroup>
+
+    <MudNavGroup Title="Detention"
+                 Icon="@Icons.Material.Filled.Lock"
+                 Expanded="false">
+        <MudNavLink Href="/detention/facilities"
+                    Icon="@Icons.Material.Filled.LocationCity">
+            Facilities
+        </MudNavLink>
+        <MudNavLink Href="/detention/trends"
+                    Icon="@Icons.Material.Filled.TrendingUp">
+            Population Trends
+        </MudNavLink>
+    </MudNavGroup>
+
+    <MudNavGroup Title="Removals"
+                 Icon="@Icons.Material.Filled.FlightTakeoff"
+                 Expanded="false">
+        <MudNavLink Href="/removals/nationality"
+                    Icon="@Icons.Material.Filled.Flag">
+            By Nationality
+        </MudNavLink>
+        <MudNavLink Href="/removals/trends"
+                    Icon="@Icons.Material.Filled.ShowChart">
+            Monthly Trends
+        </MudNavLink>
+    </MudNavGroup>
+
+    <MudNavLink Href="/alerts"
+                Icon="@Icons.Material.Filled.NotificationsActive">
+        Alerts
+    </MudNavLink>
+
+    <MudDivider Class="my-2" />
+
+    <MudNavGroup Title="Account"
+                 Icon="@Icons.Material.Filled.Settings"
+                 Expanded="false">
+        <MudNavLink Href="/settings/team"
+                    Icon="@Icons.Material.Filled.Group">
+            Team
+        </MudNavLink>
+        <MudNavLink Href="/settings/billing"
+                    Icon="@Icons.Material.Filled.CreditCard">
+            Billing
+        </MudNavLink>
+        <MudNavLink Href="/account/logout"
+                    Icon="@Icons.Material.Filled.Logout">
+            Sign Out
+        </MudNavLink>
+    </MudNavGroup>
+</MudNavMenu>

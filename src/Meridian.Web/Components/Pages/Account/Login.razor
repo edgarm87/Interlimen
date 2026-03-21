@@ -1,0 +1,102 @@
+@page "/account/login"
+@using Meridian.Web.Components.Layout
+@rendermode @(new InteractiveServerRenderMode(prerender: false))
+@layout AuthLayout
+
+<PageTitle>Sign In — Meridian</PageTitle>
+
+<MudCard Elevation="4" Class="login-card">
+    <MudCardContent>
+        <div class="d-flex justify-center mb-4">
+            <MudIcon Icon="@Icons.Material.Filled.Gavel"
+                     Color="Color.Primary"
+                     Size="Size.Large" />
+        </div>
+        <MudText Typo="Typo.h5" Align="Align.Center" Class="mb-1">
+            Meridian
+        </MudText>
+        <MudText Typo="Typo.body2" Align="Align.Center"
+                 Color="Color.Secondary" Class="mb-6">
+            Legal Intelligence for Immigration Professionals
+        </MudText>
+
+        @if (_error == "invalid")
+        {
+            <MudAlert Severity="Severity.Error" Class="mb-4">
+                Invalid email or password.
+            </MudAlert>
+        }
+        @if (_error == "locked")
+        {
+            <MudAlert Severity="Severity.Error" Class="mb-4">
+                Account is temporarily locked. Please try again later.
+            </MudAlert>
+        }
+
+        <form method="post" action="/auth/login">
+            <input type="hidden" name="returnUrl" value="@ReturnUrl" />
+            <AntiforgeryToken />
+
+            <MudTextField @bind-Value="_email"
+                          Label="Email"
+                          InputType="InputType.Email"
+                          Variant="Variant.Outlined"
+                          AdornmentIcon="@Icons.Material.Filled.Email"
+                          Adornment="Adornment.Start"
+                          Class="mb-3" />
+
+            <MudTextField @bind-Value="_password"
+                          Label="Password"
+                          InputType="@_passwordInputType"
+                          Variant="Variant.Outlined"
+                          AdornmentIcon="@_passwordIcon"
+                          Adornment="Adornment.End"
+                          OnAdornmentClick="TogglePassword"
+                          Class="mb-2" />
+
+            <input type="hidden" name="email" value="@_email" />
+            <input type="hidden" name="password" value="@_password" />
+
+            <div class="d-flex justify-end mb-4">
+                <MudLink Href="/account/forgot-password" Typo="Typo.body2">
+                    Forgot password?
+                </MudLink>
+            </div>
+
+            <MudButton ButtonType="ButtonType.Submit"
+                       Variant="Variant.Filled"
+                       Color="Color.Primary"
+                       FullWidth="true"
+                       Size="Size.Large"
+                       Class="mb-3">
+                Sign In
+            </MudButton>
+        </form>
+
+        <MudText Align="Align.Center" Typo="Typo.body2">
+            Don't have an account?
+            <MudLink Href="/account/register">Start free trial</MudLink>
+        </MudText>
+    </MudCardContent>
+</MudCard>
+
+@code {
+    private string _email = "";
+    private string _password = "";
+    private bool _showPassword = false;
+
+    private InputType _passwordInputType =>
+        _showPassword ? InputType.Text : InputType.Password;
+    private string _passwordIcon =>
+        _showPassword
+            ? Icons.Material.Filled.VisibilityOff
+            : Icons.Material.Filled.Visibility;
+
+    [SupplyParameterFromQuery]
+    private string? ReturnUrl { get; set; }
+
+    [SupplyParameterFromQuery]
+    private string? _error { get; set; }
+
+    private void TogglePassword() => _showPassword = !_showPassword;
+}

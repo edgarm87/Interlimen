@@ -1,0 +1,29 @@
+<MudCard Elevation="2">
+    <MudCardContent Class="pa-4">
+        <div class="d-flex align-center justify-space-between">
+            <div>
+                <MudText Typo="Typo.body2" Color="Color.Secondary">@Title</MudText>
+                <MudText Typo="Typo.h4" Class="mt-1 font-weight-bold">@Value</MudText>
+                @if (!string.IsNullOrEmpty(Trend))
+                {
+                    var isPositive = Trend.StartsWith("+");
+                    <MudText Typo="Typo.caption"
+                             Color="@(isPositive ? Color.Success : Color.Error)">
+                        @Trend vs last month
+                    </MudText>
+                }
+            </div>
+            <MudAvatar Color="@Color" Size="Size.Large">
+                <MudIcon Icon="@Icon" />
+            </MudAvatar>
+        </div>
+    </MudCardContent>
+</MudCard>
+
+@code {
+    [Parameter] public string Title { get; set; } = "";
+    [Parameter] public string Value { get; set; } = "";
+    [Parameter] public string Icon { get; set; } = "";
+    [Parameter] public Color Color { get; set; } = Color.Primary;
+    [Parameter] public string? Trend { get; set; }
+}

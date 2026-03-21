@@ -1,0 +1,86 @@
+@page "/judges"
+@using Microsoft.AspNetCore.Authorization
+@rendermode @(new InteractiveServerRenderMode(prerender: false))
+@attribute [Authorize]
+
+<PageTitle>Judge Analytics — Meridian</PageTitle>
+
+<MudText Typo="Typo.h4" Class="mb-1">Judge Analytics</MudText>
+<MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-6">
+    Grant rates, denial rates, and case volume by immigration judge
+</MudText>
+
+<MudAlert Severity="Severity.Info" Class="mb-6">
+    <MudText Typo="Typo.body2">
+        <strong>Data coming soon.</strong> Judge-level decision data is sourced from the
+        Department of Justice EOIR via FOIA request. Our initial data request is in progress.
+        Expected availability: Q3 2026.
+    </MudText>
+</MudAlert>
+
+<MudGrid Class="mb-6">
+    <MudItem xs="12" md="4">
+        <MudCard Elevation="2">
+            <MudCardContent Class="pa-6 d-flex flex-column align-center">
+                <MudIcon Icon="@Icons.Material.Filled.Gavel"
+                         Color="Color.Primary" Size="Size.Large" Class="mb-3" />
+                <MudText Typo="Typo.h6" Align="Align.Center" Class="mb-2">
+                    Grant Rate by Judge
+                </MudText>
+                <MudText Typo="Typo.body2" Align="Align.Center" Color="Color.Secondary">
+                    See which judges grant asylum and relief at higher rates —
+                    critical intelligence before any hearing.
+                </MudText>
+            </MudCardContent>
+        </MudCard>
+    </MudItem>
+    <MudItem xs="12" md="4">
+        <MudCard Elevation="2">
+            <MudCardContent Class="pa-6 d-flex flex-column align-center">
+                <MudIcon Icon="@Icons.Material.Filled.HourglassEmpty"
+                         Color="Color.Warning" Size="Size.Large" Class="mb-3" />
+                <MudText Typo="Typo.h6" Align="Align.Center" Class="mb-2">
+                    Average Days to Decision
+                </MudText>
+                <MudText Typo="Typo.body2" Align="Align.Center" Color="Color.Secondary">
+                    Plan your caseload around each judge's typical decision timeline.
+                </MudText>
+            </MudCardContent>
+        </MudCard>
+    </MudItem>
+    <MudItem xs="12" md="4">
+        <MudCard Elevation="2">
+            <MudCardContent Class="pa-6 d-flex flex-column align-center">
+                <MudIcon Icon="@Icons.Material.Filled.TrendingUp"
+                         Color="Color.Success" Size="Size.Large" Class="mb-3" />
+                <MudText Typo="Typo.h6" Align="Align.Center" Class="mb-2">
+                    Historical Trends
+                </MudText>
+                <MudText Typo="Typo.body2" Align="Align.Center" Color="Color.Secondary">
+                    Track how a judge's grant rate has shifted over time across case types.
+                </MudText>
+            </MudCardContent>
+        </MudCard>
+    </MudItem>
+</MudGrid>
+
+<MudPaper Class="pa-6" Elevation="1">
+    <MudText Typo="Typo.h6" Class="mb-2">Want early access to judge data?</MudText>
+    <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-4">
+        We're processing a FOIA request with DOJ EOIR for comprehensive judge-level
+        decision data covering FY2012 to present. Enter your email to be notified
+        when this feature goes live.
+    </MudText>
+    <MudGrid>
+        <MudItem xs="12" md="6">
+            <input type="email"
+                   placeholder="your@email.com"
+                   style="width:100%; padding:12px; border:1px solid #ccc; border-radius:4px; font-size:14px; box-sizing:border-box" />
+        </MudItem>
+        <MudItem xs="12" md="2">
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" FullWidth="true">
+                Notify Me
+            </MudButton>
+        </MudItem>
+    </MudGrid>
+</MudPaper>

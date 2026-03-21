@@ -1,0 +1,30 @@
+## .NET
+*.user
+*.suo
+.vs/
+bin/
+obj/
+*.nupkg
+
+## Local config / secrets
+appsettings.Local.json
+appsettings.Development.json
+**/secrets.json
+
+## Data files — never commit these
+src/Meridian.Importer/Data/
+*.xlsx
+*.csv
+*.tsv
+*.xls
+
+## OS
+.DS_Store
+Thumbs.db
+
+## Rider/JetBrains
+.idea/
+
+## Logs
+*.log
+logs/
