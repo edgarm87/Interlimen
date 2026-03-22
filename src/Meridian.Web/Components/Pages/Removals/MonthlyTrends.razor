@@ -1,12 +1,236 @@
 @page "/removals/trends"
 @using Microsoft.AspNetCore.Authorization
+@using Meridian.Application.Features.Removals
+@using ApexCharts
+@using Color = MudBlazor.Color
+@rendermode @(new InteractiveServerRenderMode(prerender: false))
 @attribute [Authorize]
+@inject IMediator Mediator
 
-<PageTitle>Monthly Trends — Meridian</PageTitle>
-<MudText Typo="Typo.h4" Class="mb-1">Monthly Removal Trends</MudText>
+<PageTitle>Removal Trends — Meridian</PageTitle>
+
+<MudText Typo="Typo.h4" Class="mb-1">Removal Trends</MudText>
 <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-6">
-    Month-by-month removal statistics across all nationalities
+    Year-over-year removal patterns — FY2013 to FY2022
 </MudText>
-<MudAlert Severity="Severity.Info">
-    Monthly breakdown data is coming in the next update.
-</MudAlert>
+
+@if (_loading)
+{
+    <MudProgressLinear Indeterminate="true" Color="Color.Primary" Class="mb-4" />
+}
+else
+{
+    <!-- KPI Row -->
+    <MudGrid Class="mb-4">
+        <MudItem xs="12" md="3">
+            <MudCard Elevation="2">
+                <MudCardContent Class="pa-4">
+                    <MudText Typo="Typo.body2" Color="Color.Secondary">Peak Year</MudText>
+                    <MudText Typo="Typo.h5" Class="font-weight-bold">FY@_peakYear</MudText>
+                    <MudText Typo="Typo.caption" Color="Color.Secondary">
+                        @_peakTotal.ToString("N0") removals
+                    </MudText>
+                </MudCardContent>
+            </MudCard>
+        </MudItem>
+        <MudItem xs="12" md="3">
+            <MudCard Elevation="2">
+                <MudCardContent Class="pa-4">
+                    <MudText Typo="Typo.body2" Color="Color.Secondary">Most Recent Year</MudText>
+                    <MudText Typo="Typo.h5" Class="font-weight-bold">FY2022</MudText>
+                    <MudText Typo="Typo.caption" Color="Color.Secondary">
+                        @_latestTotal.ToString("N0") removals
+                    </MudText>
+                </MudCardContent>
+            </MudCard>
+        </MudItem>
+        <MudItem xs="12" md="3">
+            <MudCard Elevation="2">
+                <MudCardContent Class="pa-4">
+                    <MudText Typo="Typo.body2" Color="Color.Secondary">10-Year Total</MudText>
+                    <MudText Typo="Typo.h5" Class="font-weight-bold">
+                        @((_grandTotal / 1_000_000m).ToString("F1"))M
+                    </MudText>
+                    <MudText Typo="Typo.caption" Color="Color.Secondary">
+                        FY2013 — FY2022
+                    </MudText>
+                </MudCardContent>
+            </MudCard>
+        </MudItem>
+        <MudItem xs="12" md="3">
+            <MudCard Elevation="2">
+                <MudCardContent Class="pa-4">
+                    <MudText Typo="Typo.body2" Color="Color.Secondary">Avg Criminal %</MudText>
+                    <MudText Typo="Typo.h5" Class="font-weight-bold">
+                        @_avgCriminalPct.ToString("F1")%
+                    </MudText>
+                    <MudText Typo="Typo.caption" Color="Color.Secondary">
+                        Across all years
+                    </MudText>
+                </MudCardContent>
+            </MudCard>
+        </MudItem>
+    </MudGrid>
+
+    <!-- Total Removals Bar Chart -->
+    <MudCard Class="mb-4" Elevation="2">
+        <MudCardHeader>
+            <CardHeaderContent>
+                <MudText Typo="Typo.h6">Total Removals by Fiscal Year</MudText>
+                <MudText Typo="Typo.body2" Color="Color.Secondary">
+                    Criminal vs Non-Criminal breakdown
+                </MudText>
+            </CardHeaderContent>
+        </MudCardHeader>
+        <MudCardContent>
+            <ApexChart TItem="YearlyRemovalTotalDto"
+                       Title=""
+                       Height="450"
+                       Options="_barOptions">
+                <ApexPointSeries TItem="YearlyRemovalTotalDto"
+                                 Items="_yearlyTotals"
+                                 Name="Criminal"
+                                 SeriesType="SeriesType.Bar"
+                                 XValue="@(e => $"FY{e.Year}")"
+                                 YValue="@(e => e.CriminalRemovals)"
+                                 Color="#D32F2F" />
+                <ApexPointSeries TItem="YearlyRemovalTotalDto"
+                                 Items="_yearlyTotals"
+                                 Name="Non-Criminal"
+                                 SeriesType="SeriesType.Bar"
+                                 XValue="@(e => $"FY{e.Year}")"
+                                 YValue="@(e => e.NonCriminalRemovals)"
+                                 Color="#1B4F72" />
+            </ApexChart>
+        </MudCardContent>
+    </MudCard>
+
+    <!-- Top 5 Nationalities Trend -->
+    <MudCard Elevation="2">
+        <MudCardHeader>
+            <CardHeaderContent>
+                <MudText Typo="Typo.h6">Top 5 Nationalities — 10 Year Trend</MudText>
+                <MudText Typo="Typo.body2" Color="Color.Secondary">
+                    Annual removals for highest-volume countries
+                </MudText>
+            </CardHeaderContent>
+        </MudCardHeader>
+        <MudCardContent>
+            <ApexChart TItem="NationalityTrendPoint"
+                       Title=""
+                       Height="450"
+                       Options="_lineOptions">
+                @foreach (var country in _top5Countries)
+                {
+                    <ApexPointSeries TItem="NationalityTrendPoint"
+                                     Items="_trendData.Where(x => x.Country == country).ToList()"
+                                     Name="@country"
+                                     SeriesType="SeriesType.Line"
+                                     XValue="@(e => $"FY{e.Year}")"
+                                     YValue="@(e => e.TotalRemovals)" />
+                }
+            </ApexChart>
+        </MudCardContent>
+    </MudCard>
+}
+
+@code {
+    private bool _loading = true;
+    private List<YearlyRemovalTotalDto> _yearlyTotals = new();
+    private List<NationalityTrendPoint> _trendData = new();
+    private List<string> _top5Countries = new();
+
+    private int _peakYear = 0;
+    private int _peakTotal = 0;
+    private int _latestTotal = 0;
+    private long _grandTotal = 0;
+    private decimal _avgCriminalPct = 0;
+
+    private ApexChartOptions<YearlyRemovalTotalDto> _barOptions = new()
+    {
+        Chart = new Chart { Stacked = true, Toolbar = new Toolbar { Show = false } },
+        PlotOptions = new PlotOptions
+        {
+            Bar = new PlotOptionsBar { Horizontal = false, ColumnWidth = "60%" }
+        },
+        DataLabels = new DataLabels { Enabled = false },
+        Xaxis = new XAxis { Type = XAxisType.Category },
+        Yaxis = new List<YAxis>
+        {
+            new YAxis
+            {
+                Labels = new YAxisLabels
+                {
+                    Formatter = "function(val) { return (val/1000).toFixed(0) + 'K'; }"
+                }
+            }
+        }
+    };
+
+    private ApexChartOptions<NationalityTrendPoint> _lineOptions = new()
+    {
+        Chart = new Chart { Toolbar = new Toolbar { Show = false } },
+        Stroke = new Stroke { Curve = Curve.Smooth, Width = new List<int> { 3 } },
+        DataLabels = new DataLabels { Enabled = false },
+        Xaxis = new XAxis { Type = XAxisType.Category },
+        Yaxis = new List<YAxis>
+        {
+            new YAxis
+            {
+                Labels = new YAxisLabels
+                {
+                    Formatter = "function(val) { return (val/1000).toFixed(0) + 'K'; }"
+                }
+            }
+        }
+    };
+
+    protected override async Task OnInitializedAsync()
+    {
+        _loading = true;
+
+        _yearlyTotals = await Mediator.Send(new GetYearlyRemovalTotals());
+        _yearlyTotals = _yearlyTotals.OrderBy(x => x.Year).ToList();
+
+        // Calculate KPIs
+        var peak = _yearlyTotals.MaxBy(x => x.TotalRemovals);
+        _peakYear = peak?.Year ?? 0;
+        _peakTotal = peak?.TotalRemovals ?? 0;
+        _latestTotal = _yearlyTotals.FirstOrDefault(x => x.Year == 2022)?.TotalRemovals ?? 0;
+        _grandTotal = _yearlyTotals.Sum(x => (long)x.TotalRemovals);
+        _avgCriminalPct = _yearlyTotals.Any()
+            ? _yearlyTotals.Average(x =>
+                x.TotalRemovals > 0
+                    ? (decimal)x.CriminalRemovals / x.TotalRemovals * 100
+                    : 0)
+            : 0;
+
+        // Build top 5 nationality trend data
+        var top5 = await Mediator.Send(new GetTopNationalities(5, 2022));
+        _top5Countries = top5.Select(x => x.NationalityDisplay).ToList();
+
+        foreach (var year in Enumerable.Range(2013, 10))
+        {
+            var yearData = await Mediator.Send(new GetAllRemovalsByYear(year));
+            foreach (var country in _top5Countries)
+            {
+                var record = yearData.FirstOrDefault(x => x.NationalityDisplay == country);
+                _trendData.Add(new NationalityTrendPoint
+                {
+                    Country = country,
+                    Year = year,
+                    TotalRemovals = record?.TotalRemovals ?? 0
+                });
+            }
+        }
+
+        _loading = false;
+    }
+
+    public class NationalityTrendPoint
+    {
+        public string Country { get; set; } = "";
+        public int Year { get; set; }
+        public int TotalRemovals { get; set; }
+    }
+}
