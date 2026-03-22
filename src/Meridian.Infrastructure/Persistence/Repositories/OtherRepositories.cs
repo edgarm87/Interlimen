@@ -66,17 +66,25 @@ public class RemovalStatisticRepository : Repository<RemovalStatistic>, IRemoval
         int months = 24,
         CancellationToken ct = default)
     {
-        var cutoff = DateTime.UtcNow.AddMonths(-months);
-        var cutoffYear = cutoff.Year;
-        var cutoffMonth = cutoff.Month;
-
+        // For annual data (Month=0), just return all records
+        // Monthly filtering will apply when we have real monthly data
         return await _dbSet
             .AsNoTracking()
-            .Where(s => s.Year > cutoffYear ||
-                       (s.Year == cutoffYear && s.Month >= cutoffMonth))
             .OrderBy(s => s.Year)
             .ThenBy(s => s.Month)
             .ToListAsync(ct);
+        
+        // var cutoff = DateTime.UtcNow.AddMonths(-months);
+        // var cutoffYear = cutoff.Year;
+        // var cutoffMonth = cutoff.Month;
+        //
+        // return await _dbSet
+        //     .AsNoTracking()
+        //     .Where(s => s.Year > cutoffYear ||
+        //                (s.Year == cutoffYear && s.Month >= cutoffMonth))
+        //     .OrderBy(s => s.Year)
+        //     .ThenBy(s => s.Month)
+        //     .ToListAsync(ct);
     }
 
     public async Task<IReadOnlyList<(string Nationality, int Total)>> GetTopNationalitiesAsync(

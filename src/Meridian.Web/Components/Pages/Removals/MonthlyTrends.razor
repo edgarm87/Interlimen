@@ -148,13 +148,22 @@ else
 
     private ApexChartOptions<YearlyRemovalTotalDto> _barOptions = new()
     {
-        Chart = new Chart { Stacked = true, Toolbar = new Toolbar { Show = false } },
+        Chart = new Chart
+        {
+            Stacked = true,
+            Toolbar = new Toolbar { Show = false },
+            Width = "100%"
+        },
         PlotOptions = new PlotOptions
         {
             Bar = new PlotOptionsBar { Horizontal = false, ColumnWidth = "60%" }
         },
         DataLabels = new DataLabels { Enabled = false },
-        Xaxis = new XAxis { Type = XAxisType.Category },
+        Xaxis = new XAxis
+        {
+            Type = XAxisType.Category,
+            TickPlacement = TickPlacement.On
+        },
         Yaxis = new List<YAxis>
         {
             new YAxis
