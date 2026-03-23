@@ -114,7 +114,7 @@ public class AppDbContext : IdentityDbContext<AppUser>
         {
             e.ToTable("enforcement_actions");
             e.HasKey(x => x.Id);
-            e.Property(x => x.Nationality).HasMaxLength(3);
+            e.Property(x => x.Nationality).HasMaxLength(100);
             e.Property(x => x.SourceRecordId).HasMaxLength(100);
             e.HasIndex(x => x.ActionDate);
             e.HasIndex(x => x.Nationality);

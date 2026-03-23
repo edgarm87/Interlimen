@@ -64,6 +64,11 @@ public class EnforcementAction : BaseEntity
         EnforcementActionType type,
         DateTime actionDate,
         DataSource dataSource,
+        string? nationality = null,
+        string? areaOfResponsibility = null,
+        string? apprehensionMethod = null,
+        bool? hasCriminalConviction = null,
+        string? mostSeriousOffense = null,
         string? sourceRecordId = null)
     {
         return new EnforcementAction
@@ -71,6 +76,11 @@ public class EnforcementAction : BaseEntity
             ActionType = type,
             ActionDate = actionDate,
             DataSource = dataSource,
+            Nationality = nationality,
+            AreaOfResponsibility = areaOfResponsibility,
+            ApprehensionMethod = apprehensionMethod,
+            HasCriminalConviction = hasCriminalConviction,
+            MostSeriousOffense = mostSeriousOffense,
             SourceRecordId = sourceRecordId
         };
     }

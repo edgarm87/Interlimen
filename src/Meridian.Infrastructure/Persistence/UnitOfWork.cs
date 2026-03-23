@@ -1,3 +1,4 @@
+using Meridian.Domain.Entities;
 using Meridian.Domain.Interfaces;
 using Meridian.Infrastructure.Persistence.Repositories;
 using Microsoft.EntityFrameworkCore.Storage;
@@ -15,6 +16,7 @@ public class UnitOfWork : IUnitOfWork
     public IRemovalStatisticRepository RemovalStatistics { get; }
     public IAlertRuleRepository AlertRules { get; }
     public ITenantRepository Tenants { get; }
+    public IRepository<EnforcementAction> EnforcementActions { get; }
 
     public UnitOfWork(AppDbContext context)
     {
@@ -25,6 +27,7 @@ public class UnitOfWork : IUnitOfWork
         RemovalStatistics = new RemovalStatisticRepository(context);
         AlertRules = new AlertRuleRepository(context);
         Tenants = new TenantRepository(context);
+        EnforcementActions = new Repository<EnforcementAction>(context);
     }
 
     public Task<int> SaveChangesAsync(CancellationToken ct = default)

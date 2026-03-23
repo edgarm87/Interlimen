@@ -352,8 +352,8 @@ namespace Meridian.Infrastructure.Migrations
                         .HasColumnType("text");
 
                     b.Property<string>("Nationality")
-                        .HasMaxLength(3)
-                        .HasColumnType("character varying(3)");
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
 
                     b.Property<string>("SourceRecordId")
                         .HasMaxLength(100)

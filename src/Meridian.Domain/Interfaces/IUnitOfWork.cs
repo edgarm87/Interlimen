@@ -1,3 +1,5 @@
+using Meridian.Domain.Entities;
+
 namespace Meridian.Domain.Interfaces;
 
 public interface IUnitOfWork : IDisposable
@@ -8,6 +10,7 @@ public interface IUnitOfWork : IDisposable
     IRemovalStatisticRepository RemovalStatistics { get; }
     IAlertRuleRepository AlertRules { get; }
     ITenantRepository Tenants { get; }
+    IRepository<EnforcementAction> EnforcementActions { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
     Task BeginTransactionAsync(CancellationToken cancellationToken = default);
