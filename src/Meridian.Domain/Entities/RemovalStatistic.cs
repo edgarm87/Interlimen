@@ -64,24 +64,28 @@ public class EnforcementAction : BaseEntity
         EnforcementActionType type,
         DateTime actionDate,
         DataSource dataSource,
+        string? sourceRecordId = null,
         string? nationality = null,
+        string? countryOfBirth = null,
         string? areaOfResponsibility = null,
         string? apprehensionMethod = null,
         bool? hasCriminalConviction = null,
         string? mostSeriousOffense = null,
-        string? sourceRecordId = null)
+        string? bookingFacility = null)
     {
         return new EnforcementAction
         {
             ActionType = type,
             ActionDate = actionDate,
             DataSource = dataSource,
+            SourceRecordId = sourceRecordId,
             Nationality = nationality,
+            CountryOfBirth = countryOfBirth,
             AreaOfResponsibility = areaOfResponsibility,
             ApprehensionMethod = apprehensionMethod,
             HasCriminalConviction = hasCriminalConviction,
             MostSeriousOffense = mostSeriousOffense,
-            SourceRecordId = sourceRecordId
+            BookingFacility = bookingFacility
         };
     }
 }
