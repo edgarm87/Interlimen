@@ -1,12 +1,182 @@
 @page "/detention/trends"
+@page "/detention/trends/{FacilityId:guid}"
 @using Microsoft.AspNetCore.Authorization
+@using Meridian.Application.Features.Detention
+@using ApexCharts
+@using Color = MudBlazor.Color
+@rendermode @(new InteractiveServerRenderMode(prerender: false))
 @attribute [Authorize]
+@inject IMediator Mediator
 
 <PageTitle>Population Trends — Meridian</PageTitle>
+
 <MudText Typo="Typo.h4" Class="mb-1">Detention Population Trends</MudText>
-<MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-6">
-    Monthly detention population by facility
+<MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-4">
+    Daily detention population by facility — Sep 2023 to Oct 2025
 </MudText>
-<MudAlert Severity="Severity.Info">
-    Population trend data import from ICE ERO is coming in the next update.
-</MudAlert>
+
+@if (_loading)
+{
+    <MudProgressLinear Indeterminate="true" Color="Color.Primary" Class="mb-4" />
+}
+else if (FacilityId.HasValue && _trendData.Any())
+{
+    <MudButton Variant="Variant.Text" Color="Color.Primary"
+               Href="/detention/facilities" Class="mb-4">
+        ← Back to Facilities
+    </MudButton>
+
+    <MudText Typo="Typo.h5" Class="mb-4">@_facilityName</MudText>
+
+    <MudCard Elevation="2" Class="mb-4">
+        <MudCardHeader>
+            <CardHeaderContent>
+                <MudText Typo="Typo.h6">Daily Population</MudText>
+                <MudText Typo="Typo.body2" Color="Color.Secondary">
+                    Sep 2023 — Oct 2025
+                </MudText>
+            </CardHeaderContent>
+        </MudCardHeader>
+        <MudCardContent>
+            <ApexChart TItem="PopulationTrendPointDto"
+                       Height="350"
+                       Options="_lineOptions">
+                <ApexPointSeries TItem="PopulationTrendPointDto"
+                                 Items="_trendData"
+                                 Name="Total Detained"
+                                 SeriesType="SeriesType.Area"
+                                 XValue="@(e => e.Date.ToString("MM/dd/yyyy"))"
+                                 YValue="@(e => e.TotalDetained)"
+                                 Color="#1B4F72" />
+            </ApexChart>
+        </MudCardContent>
+    </MudCard>
+}
+else
+{
+    <MudAlert Severity="Severity.Info" Class="mb-4">
+        Select a facility from the
+        <MudLink Href="/detention/facilities">Facilities page</MudLink>
+        to view its population trend.
+    </MudAlert>
+
+    <!-- Overall system population trend -->
+    <MudCard Elevation="2">
+        <MudCardHeader>
+            <CardHeaderContent>
+                <MudText Typo="Typo.h6">Total System Population — Daily</MudText>
+                <MudText Typo="Typo.body2" Color="Color.Secondary">
+                    All facilities combined — Sep 2023 to Oct 2025
+                </MudText>
+            </CardHeaderContent>
+        </MudCardHeader>
+        <MudCardContent>
+            @if (_systemTrend.Any())
+            {
+                <ApexChart TItem="SystemTrendPoint"
+                           Height="350"
+                           Options="_areaOptions">
+                    <ApexPointSeries TItem="SystemTrendPoint"
+                                     Items="_systemTrend"
+                                     Name="Total Detained"
+                                     SeriesType="SeriesType.Area"
+                                     XValue="@(e => e.Date.ToString("MM/dd/yyyy"))"
+                                     YValue="@(e => e.TotalDetained)"
+                                     Color="#1B4F72" />
+                </ApexChart>
+            }
+        </MudCardContent>
+    </MudCard>
+}
+
+@code {
+    [Parameter] public Guid? FacilityId { get; set; }
+
+    private bool _loading = true;
+    private string _facilityName = "";
+    private List<PopulationTrendPointDto> _trendData = new();
+    private List<SystemTrendPoint> _systemTrend = new();
+
+    private ApexChartOptions<PopulationTrendPointDto> _lineOptions = new()
+    {
+        Chart = new Chart { Toolbar = new Toolbar { Show = false } },
+        Stroke = new Stroke { Curve = Curve.Smooth, Width = new List<int> { 2 } },
+        DataLabels = new DataLabels { Enabled = false },
+        Xaxis = new XAxis { Type = XAxisType.Category, TickAmount = 12 },
+        Yaxis = new List<YAxis>
+        {
+            new YAxis
+            {
+                Labels = new YAxisLabels
+                {
+                    Formatter = "function(val) { return Math.round(val).toLocaleString(); }"
+                }
+            }
+        }
+    };
+
+    private ApexChartOptions<SystemTrendPoint> _areaOptions = new()
+    {
+        Chart = new Chart { Toolbar = new Toolbar { Show = false } },
+        Stroke = new Stroke { Curve = Curve.Smooth, Width = new List<int> { 2 } },
+        DataLabels = new DataLabels { Enabled = false },
+        Xaxis = new XAxis { Type = XAxisType.Category, TickAmount = 12 },
+        Yaxis = new List<YAxis>
+        {
+            new YAxis
+            {
+                Labels = new YAxisLabels
+                {
+                    Formatter = "function(val) { return (val/1000).toFixed(0) + 'K'; }"
+                }
+            }
+        }
+    };
+
+    protected override async Task OnInitializedAsync()
+    {
+        _loading = true;
+
+        if (FacilityId.HasValue)
+        {
+            _trendData = await Mediator.Send(new GetFacilityTrend(FacilityId.Value, 24));
+            var facilities = await Mediator.Send(new GetActiveFacilitiesWithPopulation());
+            _facilityName = facilities
+                .FirstOrDefault(f => f.FacilityId == FacilityId.Value)?.Name ?? "Facility";
+        }
+        else
+        {
+            await LoadSystemTrend();
+        }
+
+        _loading = false;
+    }
+
+    private async Task LoadSystemTrend()
+    {
+        var facilities = await Mediator.Send(new GetActiveFacilitiesWithPopulation());
+        var allFacilityIds = facilities.Select(f => f.FacilityId).ToList();
+
+        // Build daily totals by summing across all facilities
+        var dailyTotals = new Dictionary<DateTime, int>();
+
+        foreach (var facilityId in allFacilityIds.Take(50)) // Sample top 50 for performance
+        {
+            var trend = await Mediator.Send(new GetFacilityTrend(facilityId, 24));
+            foreach (var point in trend)
+            {
+                var day = point.Date.Date;
+                if (!dailyTotals.ContainsKey(day))
+                    dailyTotals[day] = 0;
+                dailyTotals[day] += point.TotalDetained;
+            }
+        }
+
+        _systemTrend = dailyTotals
+            .OrderBy(x => x.Key)
+            .Select(x => new SystemTrendPoint(x.Key, x.Value))
+            .ToList();
+    }
+
+    public record SystemTrendPoint(DateTime Date, int TotalDetained);
+}

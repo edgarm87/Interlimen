@@ -10,6 +10,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using System.Globalization;
+using ClosedXML.Excel;
 
 var host = Host.CreateDefaultBuilder(args)
     .ConfigureAppConfiguration((ctx, cfg) =>
@@ -49,6 +50,9 @@ switch (command)
         break;
     case "ohss":
         logger.LogInformation("OHSS import — use the original ohss command");
+        break;
+    case "detention":
+        await ImportDetentionAsync(dataPath, host.Services, logger);
         break;
     default:
         logger.LogError("Unknown command: {Command}. Use 'removals' or 'ohss'", command);
@@ -207,4 +211,144 @@ static async Task<(int imported, int skipped, int errors)> ImportSingleFileAsync
     }
 
     return (imported, skipped, errors);
+}
+
+static async Task ImportDetentionAsync(
+    string dataPath,
+    IServiceProvider services,
+    ILogger logger)
+{
+    var file = Directory.GetFiles(dataPath, "detention-facility-daily-population*.xlsx")
+        .FirstOrDefault();
+
+    if (file == null)
+    {
+        logger.LogError("No detention facility file found in {Path}", dataPath);
+        return;
+    }
+
+    logger.LogInformation("Importing detention data from {File}", Path.GetFileName(file));
+
+    using var workbook = new XLWorkbook(file);
+    var sheet = workbook.Worksheet("data");
+    var lastRow = sheet.LastRowUsed()?.RowNumber() ?? 0;
+
+    logger.LogInformation("Found {Rows} rows to process", lastRow - 1);
+
+    using var scope = services.CreateScope();
+    var uow = scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
+
+    // First pass — collect unique facilities and create them
+    var facilities = new Dictionary<string, Guid>();
+    logger.LogInformation("Creating facilities...");
+
+    for (int row = 2; row <= lastRow; row++)
+    {
+        var code = sheet.Cell(row, 1).GetValue<string>()?.Trim();
+        var name = sheet.Cell(row, 2).GetValue<string>()?.Trim();
+        var state = sheet.Cell(row, 3).GetValue<string>()?.Trim();
+
+        if (string.IsNullOrWhiteSpace(code) || facilities.ContainsKey(code)) continue;
+
+        var existing = await uow.DetentionFacilities.FindAsync(
+            f => f.AffNumber == code);
+
+        if (existing.Any())
+        {
+            facilities[code] = existing.First().Id;
+            continue;
+        }
+
+        var facility = DetentionFacility.Create(
+            name: name ?? code,
+            city: state ?? "",
+            state: state ?? "",
+            type: FacilityType.IGSA,
+            affNumber: code
+        );
+
+        await uow.DetentionFacilities.AddAsync(facility);
+        facilities[code] = facility.Id;
+    }
+
+    await uow.SaveChangesAsync();
+    logger.LogInformation("Created {Count} facilities", facilities.Count);
+
+    // Second pass — import population snapshots
+    int imported = 0;
+    int skipped = 0;
+    var batch = new List<DetentionPopulationSnapshot>();
+    const int batchSize = 500;
+
+    for (int row = 2; row <= lastRow; row++)
+    {
+        var code = sheet.Cell(row, 1).GetValue<string>()?.Trim();
+        var dateStr = sheet.Cell(row, 4).GetValue<string>()?.Trim();
+        var nDetained = sheet.Cell(row, 5).GetValue<string>()?.Trim();
+        var nMale = sheet.Cell(row, 7).GetValue<string>()?.Trim();
+        var nFemale = sheet.Cell(row, 8).GetValue<string>()?.Trim();
+        var nCriminal = sheet.Cell(row, 9).GetValue<string>()?.Trim();
+
+        if (string.IsNullOrWhiteSpace(code) || !facilities.ContainsKey(code))
+        {
+            skipped++;
+            continue;
+        }
+
+        if (!DateTime.TryParse(dateStr, out var date))
+        {
+            skipped++;
+            continue;
+        }
+
+        if (!int.TryParse(nDetained, out var totalDetained))
+        {
+            skipped++;
+            continue;
+        }
+
+        int.TryParse(nMale, out var maleCount);
+        int.TryParse(nFemale, out var femaleCount);
+        int.TryParse(nCriminal, out var criminalCount);
+
+        var snapshot = DetentionPopulationSnapshot.Create(
+            facilityId: facilities[code],
+            snapshotDate: DateTime.SpecifyKind(date, DateTimeKind.Utc),
+            totalDetained: totalDetained,
+            dataSource: DataSource.DeportationDataProject
+        );
+
+        batch.Add(snapshot);
+
+        if (batch.Count >= batchSize)
+        {
+            foreach (var item in batch)
+                await uow.DetentionFacilities.GetByIdAsync(item.FacilityId);
+            
+            // Add snapshots directly via context
+            var ctx = scope.ServiceProvider
+                .GetRequiredService<Meridian.Infrastructure.Persistence.AppDbContext>();
+            await ctx.DetentionSnapshots.AddRangeAsync(batch);
+            await ctx.SaveChangesAsync();
+            imported += batch.Count;
+            batch.Clear();
+
+            if (imported % 10000 == 0)
+                logger.LogInformation("  Progress: {Count:N0} snapshots...", imported);
+        }
+    }
+
+    // Final batch
+    if (batch.Any())
+    {
+        var ctx = scope.ServiceProvider
+            .GetRequiredService<Meridian.Infrastructure.Persistence.AppDbContext>();
+        await ctx.DetentionSnapshots.AddRangeAsync(batch);
+        await ctx.SaveChangesAsync();
+        imported += batch.Count;
+    }
+
+    logger.LogInformation(
+        "Detention import complete — Facilities: {Facilities}, Snapshots: {Snapshots}, Skipped: {Skipped}",
+        facilities.Count, imported, skipped);
 }
