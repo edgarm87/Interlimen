@@ -1,3 +1,4 @@
+using Meridian.Domain.Entities;
 using Meridian.Domain.Interfaces;
 using Meridian.Infrastructure.Identity;
 using Meridian.Infrastructure.Persistence;
@@ -44,6 +45,7 @@ public static class InfrastructureServiceRegistration
         services.AddScoped<IRemovalStatisticRepository, RemovalStatisticRepository>();
         services.AddScoped<IAlertRuleRepository, AlertRuleRepository>();
         services.AddScoped<ITenantRepository, TenantRepository>();
+        services.AddScoped<IRepository<EnforcementAction>, Repository<EnforcementAction>>();
 
         return services;
     }

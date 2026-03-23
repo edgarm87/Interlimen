@@ -1,0 +1,200 @@
+@page "/enforcement"
+@using Microsoft.AspNetCore.Authorization
+@using Meridian.Application.Features.Enforcement
+@rendermode @(new InteractiveServerRenderMode(prerender: false))
+@attribute [Authorize]
+@inject IMediator Mediator
+
+<PageTitle>Enforcement Actions — Meridian</PageTitle>
+
+<MudText Typo="Typo.h4" Class="mb-1">Enforcement Actions</MudText>
+<MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-4">
+    Individual ICE removal records — FY2012 to FY2023 · Source: ICE ERO via FOIA
+</MudText>
+
+@if (_loading)
+{
+    <MudProgressLinear Indeterminate="true" Color="Color.Primary" Class="mb-4" />
+    <MudText Typo="Typo.body2" Color="Color.Secondary">
+        Loading 2.6M records — this may take a moment...
+    </MudText>
+}
+else
+{
+    <!-- KPI Row -->
+    <MudGrid Class="mb-4">
+        <MudItem xs="12" md="3">
+            <MudCard Elevation="2">
+                <MudCardContent Class="pa-4">
+                    <MudText Typo="Typo.body2" Color="Color.Secondary">Total Removals</MudText>
+                    <MudText Typo="Typo.h5" Class="font-weight-bold">
+                        @(_summary?.TotalRemovals.ToString("N0") ?? "—")
+                    </MudText>
+                    <MudText Typo="Typo.caption" Color="Color.Secondary">
+                        FY2012 — FY2023 YTD
+                    </MudText>
+                </MudCardContent>
+            </MudCard>
+        </MudItem>
+        <MudItem xs="12" md="3">
+            <MudCard Elevation="2">
+                <MudCardContent Class="pa-4">
+                    <MudText Typo="Typo.body2" Color="Color.Secondary">Criminal Removals</MudText>
+                    <MudText Typo="Typo.h5" Class="font-weight-bold" Style="color:#D32F2F">
+                        @(_summary?.CriminalRemovals.ToString("N0") ?? "—")
+                    </MudText>
+                    <MudText Typo="Typo.caption" Color="Color.Secondary">
+                        Based on disposition code
+                    </MudText>
+                </MudCardContent>
+            </MudCard>
+        </MudItem>
+        <MudItem xs="12" md="3">
+            <MudCard Elevation="2">
+                <MudCardContent Class="pa-4">
+                    <MudText Typo="Typo.body2" Color="Color.Secondary">Top Nationality</MudText>
+                    <MudText Typo="Typo.h5" Class="font-weight-bold">
+                        @(_summary?.TopNationality ?? "—")
+                    </MudText>
+                    <MudText Typo="Typo.caption" Color="Color.Secondary">
+                        Highest volume country
+                    </MudText>
+                </MudCardContent>
+            </MudCard>
+        </MudItem>
+        <MudItem xs="12" md="3">
+            <MudCard Elevation="2">
+                <MudCardContent Class="pa-4">
+                    <MudText Typo="Typo.body2" Color="Color.Secondary">Top Field Office</MudText>
+                    <MudText Typo="Typo.h5" Class="font-weight-bold">
+                        @(_summary?.TopAOR ?? "—")
+                    </MudText>
+                    <MudText Typo="Typo.caption" Color="Color.Secondary">
+                        Highest volume AOR
+                    </MudText>
+                </MudCardContent>
+            </MudCard>
+        </MudItem>
+    </MudGrid>
+
+    <MudGrid>
+        <!-- Removals by Field Office -->
+        <MudItem xs="12" md="6">
+            <MudCard Elevation="2">
+                <MudCardHeader>
+                    <CardHeaderContent>
+                        <MudText Typo="Typo.h6">Removals by Field Office (AOR)</MudText>
+                        <MudText Typo="Typo.body2" Color="Color.Secondary">
+                            All years combined
+                        </MudText>
+                    </CardHeaderContent>
+                </MudCardHeader>
+                <MudCardContent>
+                    <MudTable Items="_byAOR.Take(10)" Dense="true" Hover="true" Striped="true">
+                        <HeaderContent>
+                            <MudTh>Field Office</MudTh>
+                            <MudTh Style="text-align:right">Total</MudTh>
+                            <MudTh Style="text-align:right">Criminal %</MudTh>
+                        </HeaderContent>
+                        <RowTemplate>
+                            <MudTd>@context.AreaOfResponsibility</MudTd>
+                            <MudTd Style="text-align:right">
+                                @context.TotalRemovals.ToString("N0")
+                            </MudTd>
+                            <MudTd Style="text-align:right">
+                                <MudChip T="string" Size="Size.Small"
+                                         Color="@(context.CriminalPercent > 50 ? Color.Error : Color.Default)">
+                                    @context.CriminalPercent.ToString("F1")%
+                                </MudChip>
+                            </MudTd>
+                        </RowTemplate>
+                    </MudTable>
+                </MudCardContent>
+            </MudCard>
+        </MudItem>
+
+        <!-- Removals by Disposition -->
+        <MudItem xs="12" md="6">
+            <MudCard Elevation="2">
+                <MudCardHeader>
+                    <CardHeaderContent>
+                        <MudText Typo="Typo.h6">Removals by Disposition Code</MudText>
+                        <MudText Typo="Typo.body2" Color="Color.Secondary">
+                            Processing type breakdown
+                        </MudText>
+                    </CardHeaderContent>
+                </MudCardHeader>
+                <MudCardContent>
+                    <MudTable Items="_byDisposition" Dense="true" Hover="true" Striped="true">
+                        <HeaderContent>
+                            <MudTh>Code</MudTh>
+                            <MudTh>Description</MudTh>
+                            <MudTh Style="text-align:right">Count</MudTh>
+                            <MudTh Style="text-align:right">%</MudTh>
+                        </HeaderContent>
+                        <RowTemplate>
+                            <MudTd>
+                                <MudChip T="string" Size="Size.Small" Color="Color.Primary">
+                                    @context.DispositionCode
+                                </MudChip>
+                            </MudTd>
+                            <MudTd>
+                                <MudText Typo="Typo.body2">@context.DispositionLabel</MudText>
+                            </MudTd>
+                            <MudTd Style="text-align:right">@context.Count.ToString("N0")</MudTd>
+                            <MudTd Style="text-align:right">@context.Percent.ToString("F1")%</MudTd>
+                        </RowTemplate>
+                    </MudTable>
+                </MudCardContent>
+            </MudCard>
+        </MudItem>
+
+        <!-- Top Nationalities -->
+        <MudItem xs="12" Class="mt-4">
+            <MudCard Elevation="2">
+                <MudCardHeader>
+                    <CardHeaderContent>
+                        <MudText Typo="Typo.h6">Top 15 Nationalities — Individual Records</MudText>
+                        <MudText Typo="Typo.body2" Color="Color.Secondary">
+                            Source: ICE ERO FOIA data — FY2012 to FY2023
+                        </MudText>
+                    </CardHeaderContent>
+                </MudCardHeader>
+                <MudCardContent>
+                    @foreach (var item in _byNationality)
+                    {
+                        <div class="mb-2">
+                            <div class="d-flex justify-space-between mb-1">
+                                <MudText Typo="Typo.body2">@item.Nationality</MudText>
+                                <MudText Typo="Typo.body2" Color="Color.Secondary">
+                                    @item.Count.ToString("N0") (@item.Percent.ToString("F1")%)
+                                </MudText>
+                            </div>
+                            <MudProgressLinear Value="@((double)item.Percent)"
+                                               Color="Color.Primary"
+                                               Size="Size.Small" />
+                        </div>
+                    }
+                </MudCardContent>
+            </MudCard>
+        </MudItem>
+    </MudGrid>
+}
+
+@code {
+    private bool _loading = true;
+    private EnforcementSummaryDto? _summary;
+    private List<RemovalsByAORDto> _byAOR = new();
+    private List<RemovalsByDispositionDto> _byDisposition = new();
+    private List<RemovalsByNationalityICEDto> _byNationality = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        _loading = true;
+        _summary = await Mediator.Send(new GetEnforcementSummary());
+        _byAOR = await Mediator.Send(new GetRemovalsByAOR());
+        _byDisposition = await Mediator.Send(new GetRemovalsByDisposition());
+        _byNationality = await Mediator.Send(new GetTopNationalitiesICE(15));
+        _loading = false;
+    }
+}
