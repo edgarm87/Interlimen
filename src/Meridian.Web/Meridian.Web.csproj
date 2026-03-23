@@ -27,4 +27,8 @@
     <ProjectReference Include="..\Meridian.Infrastructure\Meridian.Infrastructure.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Components\Pages\Enforcement\" />
+  </ItemGroup>
+
 </Project>

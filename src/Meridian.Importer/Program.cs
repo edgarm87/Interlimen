@@ -130,8 +130,13 @@ static async Task<(int imported, int skipped, int errors)> ImportSingleFileAsync
     {
         try
         {
-            var removalDateStr = csv.GetField("Removal Date");
-            var arrestDateStr = csv.GetField("Arrest Date");
+            // Handle two different column formats
+            // FY2014+ has "Removal Date" and "Arrest Date"
+            // FY2012-2013 has "Departed Date" and no Arrest Date
+            var removalDateStr = csv.GetField("Removal Date") 
+                                 ?? csv.GetField("Departed Date");
+            var arrestDateStr = csv.GetField("Arrest Date") 
+                                ?? csv.GetField("Case Close Date");
             var country = csv.GetField("Citizenship Country")?.Trim();
             var aor = csv.GetField("Area of Responsibility")?.Trim();
             var threatLevel = csv.GetField("Removal Threat Level")?.Trim();
@@ -146,8 +151,15 @@ static async Task<(int imported, int skipped, int errors)> ImportSingleFileAsync
             }
             removalDate = DateTime.SpecifyKind(removalDate, DateTimeKind.Utc);
 
-            var hasCriminal = !string.IsNullOrWhiteSpace(threatLevel) &&
-                              !threatLevel.StartsWith("(b)");
+            // Derive criminal status from INA charge section
+            // 237(a)(2) = criminal grounds of deportability
+            // 212(a)(2) = criminal grounds of inadmissibility
+            var hasCriminal = !string.IsNullOrWhiteSpace(chargeSection) &&
+                              !chargeSection.StartsWith("(b)") &&
+                              (chargeSection.StartsWith("237a2") ||
+                               chargeSection.StartsWith("212a2") ||
+                               chargeSection.StartsWith("237a2A") ||
+                               chargeSection.StartsWith("237a2B"));
 
             var action = EnforcementAction.Create(
                 type: EnforcementActionType.Removal,
