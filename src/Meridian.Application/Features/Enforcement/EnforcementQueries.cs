@@ -99,20 +99,21 @@ public class GetRemovalsByDispositionHandler
         {
             { "REINST", "Reinstatement of Removal" },
             { "ER", "Expedited Removal" },
-            { "V", "Voluntary Departure" },
-            { "T", "Transfer" },
-            { "NTA", "Notice to Appear" },
             { "WA/NTA", "Warrant/Notice to Appear" },
-            { "ADMDPT", "Administrative Deportation" },
+            { "T", "Transfer" },
             { "B", "Bond" },
+            { "V", "Voluntary Departure" },
+            { "ADMDPT", "Administrative Deportation" },
             { "NTA/DT", "NTA Detention" },
+            { "NTA", "Notice to Appear" },
             { "ER/CF", "Expedited Removal/Criminal Foreign" }
         };
 
         var total = all.Count;
         return all
-            .Where(e => !string.IsNullOrEmpty(e.ApprehensionMethod))
-            .GroupBy(e => e.ApprehensionMethod!)
+            .Where(e => !string.IsNullOrEmpty(e.DispositionCode) &&
+                        !e.DispositionCode.StartsWith("(b)"))
+            .GroupBy(e => e.DispositionCode!)
             .Select(g => new RemovalsByDispositionDto(
                 g.Key,
                 labels.GetValueOrDefault(g.Key, g.Key),

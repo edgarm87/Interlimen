@@ -120,6 +120,7 @@ public class AppDbContext : IdentityDbContext<AppUser>
             e.HasIndex(x => x.Nationality);
             e.HasIndex(x => x.ActionType);
             e.HasIndex(x => x.SourceRecordId);
+            e.Property(x => x.DispositionCode).HasMaxLength(50);
         });
 
         // ── Tenant ────────────────────────────────────────────────────────────

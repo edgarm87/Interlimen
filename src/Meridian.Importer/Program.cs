@@ -141,6 +141,7 @@ static async Task<(int imported, int skipped, int errors)> ImportSingleFileAsync
             var aor = csv.GetField("Area of Responsibility")?.Trim();
             var threatLevel = csv.GetField("Removal Threat Level")?.Trim();
             var appMethod = csv.GetField("Apprehension Method Code")?.Trim();
+            var dispositionCode = csv.GetField("Processing Disposition Code")?.Trim();
             var chargeSection = csv.GetField("Final Charge Section")?.Trim();
 
             if (string.IsNullOrWhiteSpace(country)) { skipped++; continue; }
@@ -168,6 +169,7 @@ static async Task<(int imported, int skipped, int errors)> ImportSingleFileAsync
                 nationality: country,
                 areaOfResponsibility: aor,
                 apprehensionMethod: appMethod,
+                dispositionCode: dispositionCode,
                 hasCriminalConviction: hasCriminal,
                 mostSeriousOffense: string.IsNullOrWhiteSpace(chargeSection) ||
                                     chargeSection.StartsWith("(b)") ? null : chargeSection

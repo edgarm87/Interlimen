@@ -345,6 +345,10 @@ namespace Meridian.Infrastructure.Migrations
                     b.Property<int>("DataSource")
                         .HasColumnType("integer");
 
+                    b.Property<string>("DispositionCode")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
                     b.Property<bool?>("HasCriminalConviction")
                         .HasColumnType("boolean");
 

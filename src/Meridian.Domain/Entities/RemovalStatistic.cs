@@ -57,6 +57,8 @@ public class EnforcementAction : BaseEntity
     public string? MostSeriousOffense { get; private set; }
     public string? BookingFacility { get; private set; }
     public DataSource DataSource { get; private set; }
+    
+    public string? DispositionCode { get; private set; }
 
     private EnforcementAction() { }
 
@@ -69,6 +71,7 @@ public class EnforcementAction : BaseEntity
         string? countryOfBirth = null,
         string? areaOfResponsibility = null,
         string? apprehensionMethod = null,
+        string? dispositionCode = null,
         bool? hasCriminalConviction = null,
         string? mostSeriousOffense = null,
         string? bookingFacility = null)
@@ -83,6 +86,7 @@ public class EnforcementAction : BaseEntity
             CountryOfBirth = countryOfBirth,
             AreaOfResponsibility = areaOfResponsibility,
             ApprehensionMethod = apprehensionMethod,
+            DispositionCode = dispositionCode,
             HasCriminalConviction = hasCriminalConviction,
             MostSeriousOffense = mostSeriousOffense,
             BookingFacility = bookingFacility
