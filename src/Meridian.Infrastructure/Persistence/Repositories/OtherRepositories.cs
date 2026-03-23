@@ -145,3 +145,96 @@ public class TenantRepository : Repository<Tenant>, ITenantRepository
         CancellationToken ct = default)
         => await _dbSet.FirstOrDefaultAsync(t => t.StripeCustomerId == stripeCustomerId, ct);
 }
+
+public class EnforcementActionRepository
+    : Repository<EnforcementAction>, IEnforcementActionRepository
+{
+    private readonly AppDbContext _db;
+
+    public EnforcementActionRepository(AppDbContext context) : base(context)
+        => _db = context;
+
+    public async Task<List<(string AOR, int Total, int Criminal)>> GetByAORAsync(
+        int? year, CancellationToken ct = default)
+    {
+        var results = await _db.EnforcementActions
+            .Where(e => e.ActionType == EnforcementActionType.Removal
+                        && e.AreaOfResponsibility != null
+                        && (year == null || e.ActionDate.Year == year))
+            .GroupBy(e => e.AreaOfResponsibility)
+            .Select(g => new
+            {
+                AOR = g.Key!,
+                Total = g.Count(),
+                Criminal = g.Count(e => e.HasCriminalConviction == true)
+            })
+            .OrderByDescending(x => x.Total)
+            .ToListAsync(ct);
+
+        return results.Select(x => (x.AOR, x.Total, x.Criminal)).ToList();
+    }
+
+    public async Task<List<(string Code, int Count)>> GetByDispositionAsync(
+        int? year, CancellationToken ct = default)
+    {
+        var results = await _db.EnforcementActions
+            .Where(e => e.ActionType == EnforcementActionType.Removal
+                        && e.DispositionCode != null
+                        && !e.DispositionCode.StartsWith("(b)")
+                        && (year == null || e.ActionDate.Year == year))
+            .GroupBy(e => e.DispositionCode)
+            .Select(g => new { Code = g.Key!, Count = g.Count() })
+            .OrderByDescending(x => x.Count)
+            .Take(10)
+            .ToListAsync(ct);
+
+        return results.Select(x => (x.Code, x.Count)).ToList();
+    }
+
+    public async Task<List<(string Nationality, int Count)>> GetTopNationalitiesAsync(
+        int topN, int? year, CancellationToken ct = default)
+    {
+        var results = await _db.EnforcementActions
+            .Where(e => e.ActionType == EnforcementActionType.Removal
+                        && e.Nationality != null
+                        && (year == null || e.ActionDate.Year == year))
+            .GroupBy(e => e.Nationality)
+            .Select(g => new { Nationality = g.Key!, Count = g.Count() })
+            .OrderByDescending(x => x.Count)
+            .Take(topN)
+            .ToListAsync(ct);
+
+        return results.Select(x => (x.Nationality, x.Count)).ToList();
+    }
+
+    public async Task<(int Total, int Criminal, string TopNationality, string TopAOR, DateTime Earliest, DateTime Latest)>
+        GetSummaryAsync(int? year, CancellationToken ct = default)
+    {
+        var baseQuery = _db.EnforcementActions
+            .Where(e => e.ActionType == EnforcementActionType.Removal
+                && (year == null || e.ActionDate.Year == year));
+
+        var total = await baseQuery.CountAsync(ct);
+        var criminal = await baseQuery.CountAsync(e => e.HasCriminalConviction == true, ct);
+        var earliest = await baseQuery.MinAsync(e => e.ActionDate, ct);
+        var latest = await baseQuery.MaxAsync(e => e.ActionDate, ct);
+
+        var topNationality = await baseQuery
+            .Where(e => e.Nationality != null)
+            .GroupBy(e => e.Nationality)
+            .Select(g => new { g.Key, Count = g.Count() })
+            .OrderByDescending(x => x.Count)
+            .Select(x => x.Key)
+            .FirstOrDefaultAsync(ct) ?? "N/A";
+
+        var topAOR = await baseQuery
+            .Where(e => e.AreaOfResponsibility != null)
+            .GroupBy(e => e.AreaOfResponsibility)
+            .Select(g => new { g.Key, Count = g.Count() })
+            .OrderByDescending(x => x.Count)
+            .Select(x => x.Key)
+            .FirstOrDefaultAsync(ct) ?? "N/A";
+
+        return (total, criminal, topNationality, topAOR, earliest, latest);
+    }
+}

@@ -10,7 +10,7 @@ public interface IUnitOfWork : IDisposable
     IRemovalStatisticRepository RemovalStatistics { get; }
     IAlertRuleRepository AlertRules { get; }
     ITenantRepository Tenants { get; }
-    IRepository<EnforcementAction> EnforcementActions { get; }
+    IEnforcementActionRepository EnforcementActions { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
     Task BeginTransactionAsync(CancellationToken cancellationToken = default);

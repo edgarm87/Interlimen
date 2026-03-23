@@ -44,6 +44,14 @@ public interface ITenantRepository : IRepository<Tenant>
     Task<Tenant?> GetByStripeCustomerIdAsync(string stripeCustomerId, CancellationToken ct = default);
 }
 
+public interface IEnforcementActionRepository : IRepository<EnforcementAction>
+{
+    Task<List<(string AOR, int Total, int Criminal)>> GetByAORAsync(int? year, CancellationToken ct = default);
+    Task<List<(string Code, int Count)>> GetByDispositionAsync(int? year, CancellationToken ct = default);
+    Task<List<(string Nationality, int Count)>> GetTopNationalitiesAsync(int topN, int? year, CancellationToken ct = default);
+    Task<(int Total, int Criminal, string TopNationality, string TopAOR, DateTime Earliest, DateTime Latest)> GetSummaryAsync(int? year, CancellationToken ct = default);
+}
+
 public record CourtBacklogSummary(
     string CourtCity,
     string CourtState,

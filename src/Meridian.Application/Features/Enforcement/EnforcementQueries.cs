@@ -1,8 +1,5 @@
-using Meridian.Domain.Common;
-using Meridian.Domain.Entities;
 using Meridian.Domain.Interfaces;
 using MediatR;
-using Microsoft.Extensions.Logging;
 
 namespace Meridian.Application.Features.Enforcement;
 
@@ -41,60 +38,38 @@ public record RemovalsByNationalityICEDto(
 // ── Queries ───────────────────────────────────────────────────────────────────
 
 public record GetRemovalsByAOR(int? Year = null) : IRequest<List<RemovalsByAORDto>>;
-
 public record GetRemovalsByDisposition(int? Year = null) : IRequest<List<RemovalsByDispositionDto>>;
-
 public record GetTopNationalitiesICE(int TopN = 10, int? Year = null) : IRequest<List<RemovalsByNationalityICEDto>>;
-
 public record GetEnforcementSummary(int? Year = null) : IRequest<EnforcementSummaryDto>;
 
 // ── Handlers ──────────────────────────────────────────────────────────────────
 
 public class GetRemovalsByAORHandler : IRequestHandler<GetRemovalsByAOR, List<RemovalsByAORDto>>
 {
-    private readonly IRepository<EnforcementAction> _repo;
-
-    public GetRemovalsByAORHandler(IRepository<EnforcementAction> repo) => _repo = repo;
+    private readonly IEnforcementActionRepository _repo;
+    public GetRemovalsByAORHandler(IEnforcementActionRepository repo) => _repo = repo;
 
     public async Task<List<RemovalsByAORDto>> Handle(GetRemovalsByAOR request, CancellationToken ct)
     {
-        var all = await _repo.FindAsync(e =>
-            e.ActionType == EnforcementActionType.Removal &&
-            (request.Year == null || e.ActionDate.Year == request.Year), ct);
-
-        return all
-            .Where(e => !string.IsNullOrEmpty(e.AreaOfResponsibility))
-            .GroupBy(e => e.AreaOfResponsibility!)
-            .Select(g =>
-            {
-                var total = g.Count();
-                var criminal = g.Count(e => e.HasCriminalConviction == true);
-                return new RemovalsByAORDto(
-                    g.Key.Replace(" Area of Responsibility", ""),
-                    total,
-                    criminal,
-                    total > 0 ? Math.Round((decimal)criminal / total * 100, 1) : 0
-                );
-            })
-            .OrderByDescending(x => x.TotalRemovals)
-            .ToList();
+        var results = await _repo.GetByAORAsync(request.Year, ct);
+        return results.Select(r => new RemovalsByAORDto(
+            r.AOR.Replace(" Area of Responsibility", ""),
+            r.Total,
+            r.Criminal,
+            r.Total > 0 ? Math.Round((decimal)r.Criminal / r.Total * 100, 1) : 0
+        )).OrderByDescending(x => x.TotalRemovals).ToList();
     }
 }
 
 public class GetRemovalsByDispositionHandler
     : IRequestHandler<GetRemovalsByDisposition, List<RemovalsByDispositionDto>>
 {
-    private readonly IRepository<EnforcementAction> _repo;
-
-    public GetRemovalsByDispositionHandler(IRepository<EnforcementAction> repo) => _repo = repo;
+    private readonly IEnforcementActionRepository _repo;
+    public GetRemovalsByDispositionHandler(IEnforcementActionRepository repo) => _repo = repo;
 
     public async Task<List<RemovalsByDispositionDto>> Handle(
         GetRemovalsByDisposition request, CancellationToken ct)
     {
-        var all = await _repo.FindAsync(e =>
-            e.ActionType == EnforcementActionType.Removal &&
-            (request.Year == null || e.ActionDate.Year == request.Year), ct);
-
         var labels = new Dictionary<string, string>
         {
             { "REINST", "Reinstatement of Removal" },
@@ -109,86 +84,56 @@ public class GetRemovalsByDispositionHandler
             { "ER/CF", "Expedited Removal/Criminal Foreign" }
         };
 
-        var total = all.Count;
-        return all
-            .Where(e => !string.IsNullOrEmpty(e.DispositionCode) &&
-                        !e.DispositionCode.StartsWith("(b)"))
-            .GroupBy(e => e.DispositionCode!)
-            .Select(g => new RemovalsByDispositionDto(
-                g.Key,
-                labels.GetValueOrDefault(g.Key, g.Key),
-                g.Count(),
-                total > 0 ? Math.Round((decimal)g.Count() / total * 100, 1) : 0
-            ))
-            .OrderByDescending(x => x.Count)
-            .Take(10)
-            .ToList();
+        var results = await _repo.GetByDispositionAsync(request.Year, ct);
+        var total = results.Sum(r => r.Count);
+
+        return results.Select(r => new RemovalsByDispositionDto(
+            r.Code,
+            labels.GetValueOrDefault(r.Code, r.Code),
+            r.Count,
+            total > 0 ? Math.Round((decimal)r.Count / total * 100, 1) : 0
+        )).ToList();
     }
 }
 
 public class GetTopNationalitiesICEHandler
     : IRequestHandler<GetTopNationalitiesICE, List<RemovalsByNationalityICEDto>>
 {
-    private readonly IRepository<EnforcementAction> _repo;
-
-    public GetTopNationalitiesICEHandler(IRepository<EnforcementAction> repo) => _repo = repo;
+    private readonly IEnforcementActionRepository _repo;
+    public GetTopNationalitiesICEHandler(IEnforcementActionRepository repo) => _repo = repo;
 
     public async Task<List<RemovalsByNationalityICEDto>> Handle(
         GetTopNationalitiesICE request, CancellationToken ct)
     {
-        var all = await _repo.FindAsync(e =>
-            e.ActionType == EnforcementActionType.Removal &&
-            (request.Year == null || e.ActionDate.Year == request.Year), ct);
+        var results = await _repo.GetTopNationalitiesAsync(request.TopN, request.Year, ct);
+        var total = results.Sum(r => r.Count);
 
-        var total = all.Count;
-        return all
-            .Where(e => !string.IsNullOrEmpty(e.Nationality))
-            .GroupBy(e => e.Nationality!)
-            .Select(g => new RemovalsByNationalityICEDto(
-                g.Key,
-                g.Count(),
-                total > 0 ? Math.Round((decimal)g.Count() / total * 100, 1) : 0
-            ))
-            .OrderByDescending(x => x.Count)
-            .Take(request.TopN)
-            .ToList();
+        return results.Select(r => new RemovalsByNationalityICEDto(
+            r.Nationality,
+            r.Count,
+            total > 0 ? Math.Round((decimal)r.Count / total * 100, 1) : 0
+        )).ToList();
     }
 }
 
 public class GetEnforcementSummaryHandler
     : IRequestHandler<GetEnforcementSummary, EnforcementSummaryDto>
 {
-    private readonly IRepository<EnforcementAction> _repo;
-
-    public GetEnforcementSummaryHandler(IRepository<EnforcementAction> repo) => _repo = repo;
+    private readonly IEnforcementActionRepository _repo;
+    public GetEnforcementSummaryHandler(IEnforcementActionRepository repo) => _repo = repo;
 
     public async Task<EnforcementSummaryDto> Handle(
         GetEnforcementSummary request, CancellationToken ct)
     {
-        var all = await _repo.FindAsync(e =>
-            e.ActionType == EnforcementActionType.Removal &&
-            (request.Year == null || e.ActionDate.Year == request.Year), ct);
-
-        var topNationality = all
-            .Where(e => !string.IsNullOrEmpty(e.Nationality))
-            .GroupBy(e => e.Nationality!)
-            .OrderByDescending(g => g.Count())
-            .FirstOrDefault()?.Key ?? "N/A";
-
-        var topAOR = all
-            .Where(e => !string.IsNullOrEmpty(e.AreaOfResponsibility))
-            .GroupBy(e => e.AreaOfResponsibility!)
-            .OrderByDescending(g => g.Count())
-            .FirstOrDefault()?.Key?.Replace(" Area of Responsibility", "") ?? "N/A";
-
+        var summary = await _repo.GetSummaryAsync(request.Year, ct);
         return new EnforcementSummaryDto(
-            all.Count,
-            all.Count(e => e.HasCriminalConviction == true),
-            all.Count(e => e.HasCriminalConviction == false),
-            topNationality,
-            topAOR,
-            all.Min(e => e.ActionDate),
-            all.Max(e => e.ActionDate)
+            summary.Total,
+            summary.Criminal,
+            summary.Total - summary.Criminal,
+            summary.TopNationality,
+            summary.TopAOR.Replace(" Area of Responsibility", ""),
+            summary.Earliest,
+            summary.Latest
         );
     }
 }

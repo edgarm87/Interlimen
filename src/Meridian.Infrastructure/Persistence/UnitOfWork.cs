@@ -16,8 +16,7 @@ public class UnitOfWork : IUnitOfWork
     public IRemovalStatisticRepository RemovalStatistics { get; }
     public IAlertRuleRepository AlertRules { get; }
     public ITenantRepository Tenants { get; }
-    public IRepository<EnforcementAction> EnforcementActions { get; }
-
+    public IEnforcementActionRepository EnforcementActions { get; }
     public UnitOfWork(AppDbContext context)
     {
         _context = context;
@@ -27,7 +26,7 @@ public class UnitOfWork : IUnitOfWork
         RemovalStatistics = new RemovalStatisticRepository(context);
         AlertRules = new AlertRuleRepository(context);
         Tenants = new TenantRepository(context);
-        EnforcementActions = new Repository<EnforcementAction>(context);
+        EnforcementActions = new EnforcementActionRepository(context);
     }
 
     public Task<int> SaveChangesAsync(CancellationToken ct = default)
