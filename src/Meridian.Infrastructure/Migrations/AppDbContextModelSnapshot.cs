@@ -227,8 +227,8 @@ namespace Meridian.Infrastructure.Migrations
                         .HasColumnType("uuid");
 
                     b.Property<string>("AffNumber")
-                        .HasMaxLength(20)
-                        .HasColumnType("character varying(20)");
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
 
                     b.Property<string>("City")
                         .IsRequired()
@@ -315,6 +315,105 @@ namespace Meridian.Infrastructure.Migrations
                     b.ToTable("detention_population_snapshots", (string)null);
                 });
 
+            modelBuilder.Entity("Meridian.Domain.Entities.DetentionStay", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<int?>("BirthYear")
+                        .HasColumnType("integer");
+
+                    b.Property<decimal?>("BondPostedAmount")
+                        .HasPrecision(10, 2)
+                        .HasColumnType("numeric(10,2)");
+
+                    b.Property<string>("BookInCriminality")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<string>("CaseCategory")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<string>("CaseStatus")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<string>("CaseThreatLevel")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<string>("CitizenshipCountry")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("DataSource")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("EntryStatus")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<DateTime>("FacilityBookInDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("FacilityBookOutDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("FacilityId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("FacilityReleaseReason")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<string>("Gender")
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<bool?>("HasFinalOrder")
+                        .HasColumnType("boolean");
+
+                    b.Property<decimal?>("InitialBondAmount")
+                        .HasPrecision(10, 2)
+                        .HasColumnType("numeric(10,2)");
+
+                    b.Property<DateTime>("StayBookInDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("StayBookOutDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("StayReleaseReason")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<string>("UniqueIdentifier")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CitizenshipCountry");
+
+                    b.HasIndex("FacilityId");
+
+                    b.HasIndex("StayBookInDate");
+
+                    b.HasIndex("UniqueIdentifier");
+
+                    b.HasIndex("FacilityId", "StayBookInDate");
+
+                    b.ToTable("detention_stays", (string)null);
+                });
+
             modelBuilder.Entity("Meridian.Domain.Entities.EnforcementAction", b =>
                 {
                     b.Property<Guid>("Id")
@@ -346,8 +445,8 @@ namespace Meridian.Infrastructure.Migrations
                         .HasColumnType("integer");
 
                     b.Property<string>("DispositionCode")
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)");
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
 
                     b.Property<bool?>("HasCriminalConviction")
                         .HasColumnType("boolean");
@@ -360,6 +459,10 @@ namespace Meridian.Infrastructure.Migrations
                         .HasColumnType("character varying(100)");
 
                     b.Property<string>("SourceRecordId")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<string>("UniqueIdentifier")
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)");
 
@@ -376,7 +479,153 @@ namespace Meridian.Infrastructure.Migrations
 
                     b.HasIndex("SourceRecordId");
 
+                    b.HasIndex("UniqueIdentifier");
+
                     b.ToTable("enforcement_actions", (string)null);
+                });
+
+            modelBuilder.Entity("Meridian.Domain.Entities.IceDetainer", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<bool?>("AggravatedFelony")
+                        .HasColumnType("boolean");
+
+                    b.Property<DateTime?>("ApprehensionDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("BirthCountry")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<int?>("BirthYear")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("CaseCategory")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<string>("CaseStatus")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<string>("CitizenshipCountry")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("DataSource")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime?>("DepartedDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("DepartureCountry")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<string>("DetainerCriminality")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<string>("DetainerLiftReason")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<DateTime>("DetainerPrepareDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("DetainerType")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<string>("DetentionFacilityCode")
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<string>("DetentionFacilityName")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<string>("EntryStatus")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<string>("FacilityAor")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<string>("FacilityCity")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<string>("FacilityState")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<DateTime?>("FinalOrderDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("FinalProgram")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<string>("Gender")
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<bool?>("HasFinalOrder")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool?>("IsFelon")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("MostSeriousConvictionCharge")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<string>("PortOfDeparture")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<bool?>("PriorFelony")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("ProcessingDisposition")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<string>("ThreatLevel")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<string>("UniqueIdentifier")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<bool?>("ViolentMisdemeanor")
+                        .HasColumnType("boolean");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CitizenshipCountry");
+
+                    b.HasIndex("DepartureCountry");
+
+                    b.HasIndex("DetainerPrepareDate");
+
+                    b.HasIndex("FacilityState");
+
+                    b.HasIndex("UniqueIdentifier");
+
+                    b.ToTable("ice_detainers", (string)null);
                 });
 
             modelBuilder.Entity("Meridian.Domain.Entities.Judge", b =>
@@ -811,6 +1060,17 @@ namespace Meridian.Infrastructure.Migrations
                         .WithMany("PopulationSnapshots")
                         .HasForeignKey("FacilityId")
                         .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Facility");
+                });
+
+            modelBuilder.Entity("Meridian.Domain.Entities.DetentionStay", b =>
+                {
+                    b.HasOne("Meridian.Domain.Entities.DetentionFacility", "Facility")
+                        .WithMany()
+                        .HasForeignKey("FacilityId")
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.Navigation("Facility");

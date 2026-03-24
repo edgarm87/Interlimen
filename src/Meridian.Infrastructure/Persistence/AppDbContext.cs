@@ -8,7 +8,9 @@ namespace Meridian.Infrastructure.Persistence;
 // IdentityDbContext<AppUser> — by inheriting from this instead of plain DbContext, we get
 public class AppDbContext : IdentityDbContext<AppUser>
 {
-    public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
+    public AppDbContext(DbContextOptions<AppDbContext> options) : base(options)
+    {
+    }
 
     // Immigration data
     public DbSet<Judge> Judges => Set<Judge>();
@@ -17,6 +19,8 @@ public class AppDbContext : IdentityDbContext<AppUser>
     public DbSet<DetentionPopulationSnapshot> DetentionSnapshots => Set<DetentionPopulationSnapshot>();
     public DbSet<RemovalStatistic> RemovalStatistics => Set<RemovalStatistic>();
     public DbSet<EnforcementAction> EnforcementActions => Set<EnforcementAction>();
+    public DbSet<DetentionStay> DetentionStays => Set<DetentionStay>();
+    public DbSet<IceDetainer> IceDetainers => Set<IceDetainer>();
 
     // SaaS / Alerting
     public DbSet<Tenant> Tenants => Set<Tenant>();
@@ -79,7 +83,7 @@ public class AppDbContext : IdentityDbContext<AppUser>
             e.ToTable("detention_facilities");
             e.HasKey(x => x.Id);
             e.Property(x => x.Name).HasMaxLength(200).IsRequired();
-            e.Property(x => x.AffNumber).HasMaxLength(20);
+            e.Property(x => x.AffNumber).HasMaxLength(50);
             e.Property(x => x.City).HasMaxLength(100).IsRequired();
             e.Property(x => x.State).HasMaxLength(2).IsRequired();
             e.HasIndex(x => x.AffNumber);
@@ -120,7 +124,72 @@ public class AppDbContext : IdentityDbContext<AppUser>
             e.HasIndex(x => x.Nationality);
             e.HasIndex(x => x.ActionType);
             e.HasIndex(x => x.SourceRecordId);
-            e.Property(x => x.DispositionCode).HasMaxLength(50);
+            e.Property(x => x.DispositionCode).HasMaxLength(200);
+            e.Property(x => x.UniqueIdentifier).HasMaxLength(100);
+            e.HasIndex(x => x.UniqueIdentifier);
+        });
+
+        // ── DetentionStay ─────────────────────────────────────────────────────────
+        builder.Entity<DetentionStay>(e =>
+        {
+            e.ToTable("detention_stays");
+            e.HasKey(x => x.Id);
+            e.HasOne(x => x.Facility)
+                .WithMany()
+                .HasForeignKey(x => x.FacilityId)
+                .OnDelete(DeleteBehavior.Restrict);
+            e.Property(x => x.CitizenshipCountry).HasMaxLength(100);
+            e.Property(x => x.Gender).HasMaxLength(20);
+            e.Property(x => x.FacilityReleaseReason).HasMaxLength(200);
+            e.Property(x => x.StayReleaseReason).HasMaxLength(200);
+            e.Property(x => x.CaseStatus).HasMaxLength(200);
+            e.Property(x => x.CaseCategory).HasMaxLength(200);
+            e.Property(x => x.CaseThreatLevel).HasMaxLength(100);
+            e.Property(x => x.BookInCriminality).HasMaxLength(100);
+            e.Property(x => x.EntryStatus).HasMaxLength(100);
+            e.Property(x => x.UniqueIdentifier).HasMaxLength(100);
+            e.Property(x => x.InitialBondAmount).HasPrecision(10, 2);
+            e.Property(x => x.BondPostedAmount).HasPrecision(10, 2);
+            // Core query indexes
+            e.HasIndex(x => x.FacilityId);
+            e.HasIndex(x => x.StayBookInDate);
+            e.HasIndex(x => x.CitizenshipCountry);
+            e.HasIndex(x => x.UniqueIdentifier);
+            e.HasIndex(x => new { x.FacilityId, x.StayBookInDate });
+        });
+
+// ── IceDetainer ───────────────────────────────────────────────────────────
+        builder.Entity<IceDetainer>(e =>
+        {
+            e.ToTable("ice_detainers");
+            e.HasKey(x => x.Id);
+            e.Property(x => x.FacilityState).HasMaxLength(50);
+            e.Property(x => x.FacilityAor).HasMaxLength(200);
+            e.Property(x => x.DetentionFacilityName).HasMaxLength(200);
+            e.Property(x => x.DetentionFacilityCode).HasMaxLength(20);
+            e.Property(x => x.FacilityCity).HasMaxLength(100);
+            e.Property(x => x.PortOfDeparture).HasMaxLength(200);
+            e.Property(x => x.DepartureCountry).HasMaxLength(100);
+            e.Property(x => x.CaseStatus).HasMaxLength(200);
+            e.Property(x => x.CaseCategory).HasMaxLength(200);
+            e.Property(x => x.DetainerCriminality).HasMaxLength(100);
+            e.Property(x => x.ThreatLevel).HasMaxLength(100);
+            e.Property(x => x.ProcessingDisposition).HasMaxLength(200);
+            e.Property(x => x.FinalProgram).HasMaxLength(200);
+            e.Property(x => x.CitizenshipCountry).HasMaxLength(100);
+            e.Property(x => x.BirthCountry).HasMaxLength(100);
+            e.Property(x => x.Gender).HasMaxLength(20);
+            e.Property(x => x.EntryStatus).HasMaxLength(100);
+            e.Property(x => x.MostSeriousConvictionCharge).HasMaxLength(200);
+            e.Property(x => x.DetainerType).HasMaxLength(100);
+            e.Property(x => x.DetainerLiftReason).HasMaxLength(200);
+            e.Property(x => x.UniqueIdentifier).HasMaxLength(100);
+            // Core query indexes
+            e.HasIndex(x => x.DetainerPrepareDate);
+            e.HasIndex(x => x.CitizenshipCountry);
+            e.HasIndex(x => x.FacilityState);
+            e.HasIndex(x => x.UniqueIdentifier);
+            e.HasIndex(x => x.DepartureCountry);
         });
 
         // ── Tenant ────────────────────────────────────────────────────────────

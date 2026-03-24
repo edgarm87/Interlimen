@@ -59,6 +59,7 @@ public class EnforcementAction : BaseEntity
     public DataSource DataSource { get; private set; }
     
     public string? DispositionCode { get; private set; }
+    public string? UniqueIdentifier { get; private set; }
 
     private EnforcementAction() { }
 
@@ -74,7 +75,8 @@ public class EnforcementAction : BaseEntity
         string? dispositionCode = null,
         bool? hasCriminalConviction = null,
         string? mostSeriousOffense = null,
-        string? bookingFacility = null)
+        string? bookingFacility = null,
+        string? uniqueIdentifier = null)
     {
         return new EnforcementAction
         {
@@ -89,7 +91,8 @@ public class EnforcementAction : BaseEntity
             DispositionCode = dispositionCode,
             HasCriminalConviction = hasCriminalConviction,
             MostSeriousOffense = mostSeriousOffense,
-            BookingFacility = bookingFacility
+            BookingFacility = bookingFacility,
+            UniqueIdentifier = uniqueIdentifier
         };
     }
 }
