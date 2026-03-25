@@ -95,3 +95,25 @@ public class GetFacilityTrendHandler
         )).ToList();
     }
 }
+
+public record GetSystemPopulationTrend(int Months = 24)
+    : IRequest<List<PopulationTrendPointDto>>;
+
+public class GetSystemPopulationTrendHandler
+    : IRequestHandler<GetSystemPopulationTrend, List<PopulationTrendPointDto>>
+{
+    private readonly IDetentionFacilityRepository _facilities;
+
+    public GetSystemPopulationTrendHandler(IDetentionFacilityRepository facilities)
+        => _facilities = facilities;
+
+    public async Task<List<PopulationTrendPointDto>> Handle(
+        GetSystemPopulationTrend request,
+        CancellationToken ct)
+    {
+        var results = await _facilities.GetSystemPopulationTrendAsync(request.Months, ct);
+        return results
+            .Select(x => new PopulationTrendPointDto(x.Date, x.Total, null, null))
+            .ToList();
+    }
+}

@@ -43,6 +43,27 @@ public class DetentionFacilityRepository : Repository<DetentionFacility>, IDeten
 
         return snapshots.Sum(s => s.TotalDetained);
     }
+    
+    public async Task<List<(DateTime Date, int Total)>> GetSystemPopulationTrendAsync(
+        int months = 24,
+        CancellationToken ct = default)
+    {
+        var cutoff = DateTime.UtcNow.AddMonths(-months);
+
+        var results = await _context.DetentionSnapshots
+            .AsNoTracking()
+            .Where(s => s.SnapshotDate >= cutoff)
+            .GroupBy(s => s.SnapshotDate.Date)
+            .Select(g => new
+            {
+                Date = g.Key,
+                Total = g.Sum(s => s.TotalDetained)
+            })
+            .OrderBy(x => x.Date)
+            .ToListAsync(ct);
+
+        return results.Select(x => (x.Date, x.Total)).ToList();
+    }
 }
 
 public class RemovalStatisticRepository : Repository<RemovalStatistic>, IRemovalStatisticRepository
@@ -166,7 +187,7 @@ public class EnforcementActionRepository
             {
                 AOR = g.Key!,
                 Total = g.Count(),
-                Criminal = g.Count(e => e.HasCriminalConviction == true)
+                Criminal = 0  // not derivable from DDP removals data
             })
             .OrderByDescending(x => x.Total)
             .ToListAsync(ct);
@@ -180,7 +201,6 @@ public class EnforcementActionRepository
         var results = await _db.EnforcementActions
             .Where(e => e.ActionType == EnforcementActionType.Removal
                         && e.DispositionCode != null
-                        && !e.DispositionCode.StartsWith("(b)")
                         && (year == null || e.ActionDate.Year == year))
             .GroupBy(e => e.DispositionCode)
             .Select(g => new { Code = g.Key!, Count = g.Count() })
@@ -227,8 +247,9 @@ public class EnforcementActionRepository
             .Select(x => x.Key)
             .FirstOrDefaultAsync(ct) ?? "N/A";
 
-        var topAOR = await baseQuery
-            .Where(e => e.AreaOfResponsibility != null)
+        var topAOR = await _db.EnforcementActions
+            .Where(e => e.ActionType == EnforcementActionType.Arrest
+                        && e.AreaOfResponsibility != null)
             .GroupBy(e => e.AreaOfResponsibility)
             .Select(g => new { g.Key, Count = g.Count() })
             .OrderByDescending(x => x.Count)
@@ -236,5 +257,25 @@ public class EnforcementActionRepository
             .FirstOrDefaultAsync(ct) ?? "N/A";
 
         return (total, criminal, topNationality, topAOR, earliest, latest);
+    }
+    
+    public async Task<List<(string AOR, int Total, int Criminal)>> GetArrestsByAORAsync(
+        int? year, CancellationToken ct = default)
+    {
+        var results = await _db.EnforcementActions
+            .Where(e => e.ActionType == EnforcementActionType.Arrest
+                        && e.AreaOfResponsibility != null
+                        && (year == null || e.ActionDate.Year == year))
+            .GroupBy(e => e.AreaOfResponsibility)
+            .Select(g => new
+            {
+                AOR = g.Key!,
+                Total = g.Count(),
+                Criminal = g.Count(e => e.HasCriminalConviction == true)
+            })
+            .OrderByDescending(x => x.Total)
+            .ToListAsync(ct);
+
+        return results.Select(x => (x.AOR, x.Total, x.Criminal)).ToList();
     }
 }

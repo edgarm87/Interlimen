@@ -7,7 +7,7 @@ namespace Meridian.Application.Features.Enforcement;
 
 public record EnforcementSummaryDto(
     int TotalRemovals,
-    int CriminalRemovals,
+    int CriminalArrests,
     int NonCriminalRemovals,
     string TopNationality,
     string TopAOR,
@@ -70,26 +70,12 @@ public class GetRemovalsByDispositionHandler
     public async Task<List<RemovalsByDispositionDto>> Handle(
         GetRemovalsByDisposition request, CancellationToken ct)
     {
-        var labels = new Dictionary<string, string>
-        {
-            { "REINST", "Reinstatement of Removal" },
-            { "ER", "Expedited Removal" },
-            { "WA/NTA", "Warrant/Notice to Appear" },
-            { "T", "Transfer" },
-            { "B", "Bond" },
-            { "V", "Voluntary Departure" },
-            { "ADMDPT", "Administrative Deportation" },
-            { "NTA/DT", "NTA Detention" },
-            { "NTA", "Notice to Appear" },
-            { "ER/CF", "Expedited Removal/Criminal Foreign" }
-        };
-
         var results = await _repo.GetByDispositionAsync(request.Year, ct);
         var total = results.Sum(r => r.Count);
 
         return results.Select(r => new RemovalsByDispositionDto(
             r.Code,
-            labels.GetValueOrDefault(r.Code, r.Code),
+            r.Code, // full label already in the data
             r.Count,
             total > 0 ? Math.Round((decimal)r.Count / total * 100, 1) : 0
         )).ToList();
@@ -135,5 +121,34 @@ public class GetEnforcementSummaryHandler
             summary.Earliest,
             summary.Latest
         );
+    }
+}
+
+public record ArrestsByFieldOfficeDto(
+    string FieldOffice,
+    int TotalArrests,
+    int CriminalArrests,
+    decimal CriminalPercent
+);
+
+public record GetArrestsByFieldOffice(int? Year = null)
+    : IRequest<List<ArrestsByFieldOfficeDto>>;
+
+public class GetArrestsByFieldOfficeHandler
+    : IRequestHandler<GetArrestsByFieldOffice, List<ArrestsByFieldOfficeDto>>
+{
+    private readonly IEnforcementActionRepository _repo;
+    public GetArrestsByFieldOfficeHandler(IEnforcementActionRepository repo) => _repo = repo;
+
+    public async Task<List<ArrestsByFieldOfficeDto>> Handle(
+        GetArrestsByFieldOffice request, CancellationToken ct)
+    {
+        var results = await _repo.GetArrestsByAORAsync(request.Year, ct);
+        return results.Select(r => new ArrestsByFieldOfficeDto(
+            r.AOR.Replace(" Area of Responsibility", ""),
+            r.Total,
+            r.Criminal,
+            r.Total > 0 ? Math.Round((decimal)r.Criminal / r.Total * 100, 1) : 0
+        )).OrderByDescending(x => x.TotalArrests).ToList();
     }
 }

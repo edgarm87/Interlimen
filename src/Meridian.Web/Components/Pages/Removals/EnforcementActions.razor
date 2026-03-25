@@ -9,14 +9,14 @@
 
 <MudText Typo="Typo.h4" Class="mb-1">Enforcement Actions</MudText>
 <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-4">
-    Individual ICE removal records — FY2012 to FY2023 · Source: ICE ERO via FOIA
+    ICE arrests (Sep 2023–Oct 2025) and removals (FY2012–FY2023) · Source: ICE ERO via FOIA
 </MudText>
 
 @if (_loading)
 {
     <MudProgressLinear Indeterminate="true" Color="Color.Primary" Class="mb-4" />
     <MudText Typo="Typo.body2" Color="Color.Secondary">
-        Loading 2.6M records — this may take a moment...
+        Loading records — this may take a moment...
     </MudText>
 }
 else
@@ -31,7 +31,7 @@ else
                         @(_summary?.TotalRemovals.ToString("N0") ?? "—")
                     </MudText>
                     <MudText Typo="Typo.caption" Color="Color.Secondary">
-                        FY2012 — FY2023 YTD
+                        FY2012 — FY2023
                     </MudText>
                 </MudCardContent>
             </MudCard>
@@ -39,12 +39,12 @@ else
         <MudItem xs="12" md="3">
             <MudCard Elevation="2">
                 <MudCardContent Class="pa-4">
-                    <MudText Typo="Typo.body2" Color="Color.Secondary">Criminal Removals</MudText>
+                    <MudText Typo="Typo.body2" Color="Color.Secondary">Criminal Arrests</MudText>
                     <MudText Typo="Typo.h5" Class="font-weight-bold" Style="color:#D32F2F">
-                        @(_summary?.CriminalRemovals.ToString("N0") ?? "—")
+                        @(_summary?.CriminalArrests.ToString("N0") ?? "—")
                     </MudText>
                     <MudText Typo="Typo.caption" Color="Color.Secondary">
-                        Based on disposition code
+                        Based on arrest records · Sep 2023–Oct 2025
                     </MudText>
                 </MudCardContent>
             </MudCard>
@@ -70,7 +70,7 @@ else
                         @(_summary?.TopAOR ?? "—")
                     </MudText>
                     <MudText Typo="Typo.caption" Color="Color.Secondary">
-                        Highest volume AOR
+                        Highest arrest volume AOR
                     </MudText>
                 </MudCardContent>
             </MudCard>
@@ -78,28 +78,28 @@ else
     </MudGrid>
 
     <MudGrid>
-        <!-- Removals by Field Office -->
+        <!-- Arrests by Field Office -->
         <MudItem xs="12" md="6">
             <MudCard Elevation="2">
                 <MudCardHeader>
                     <CardHeaderContent>
-                        <MudText Typo="Typo.h6">Removals by Field Office (AOR)</MudText>
+                        <MudText Typo="Typo.h6">Arrests by Field Office (AOR)</MudText>
                         <MudText Typo="Typo.body2" Color="Color.Secondary">
-                            All years combined
+                            Sep 2023 — Oct 2025 · Source: DDP FOIA
                         </MudText>
                     </CardHeaderContent>
                 </MudCardHeader>
                 <MudCardContent>
-                    <MudTable Items="_byAOR.Take(10)" Dense="true" Hover="true" Striped="true">
+                    <MudTable Items="_byArrestAOR.Take(10)" Dense="true" Hover="true" Striped="true">
                         <HeaderContent>
                             <MudTh>Field Office</MudTh>
-                            <MudTh Style="text-align:right">Total</MudTh>
+                            <MudTh Style="text-align:right">Arrests</MudTh>
                             <MudTh Style="text-align:right">Criminal %</MudTh>
                         </HeaderContent>
                         <RowTemplate>
-                            <MudTd>@context.AreaOfResponsibility</MudTd>
+                            <MudTd>@context.FieldOffice</MudTd>
                             <MudTd Style="text-align:right">
-                                @context.TotalRemovals.ToString("N0")
+                                @context.TotalArrests.ToString("N0")
                             </MudTd>
                             <MudTd Style="text-align:right">
                                 <MudChip T="string" Size="Size.Small"
@@ -113,33 +113,55 @@ else
             </MudCard>
         </MudItem>
 
-        <!-- Removals by Disposition -->
+        <!-- Removals by Port of Departure -->
         <MudItem xs="12" md="6">
             <MudCard Elevation="2">
                 <MudCardHeader>
                     <CardHeaderContent>
-                        <MudText Typo="Typo.h6">Removals by Disposition Code</MudText>
+                        <MudText Typo="Typo.h6">Removals by Port of Departure</MudText>
                         <MudText Typo="Typo.body2" Color="Color.Secondary">
-                            Processing type breakdown
+                            FY2012 — FY2023 · Top 10 departure points
+                        </MudText>
+                    </CardHeaderContent>
+                </MudCardHeader>
+                <MudCardContent>
+                    <MudTable Items="_byAOR.Take(10)" Dense="true" Hover="true" Striped="true">
+                        <HeaderContent>
+                            <MudTh>Port of Departure</MudTh>
+                            <MudTh Style="text-align:right">Total</MudTh>
+                        </HeaderContent>
+                        <RowTemplate>
+                            <MudTd>@context.AreaOfResponsibility</MudTd>
+                            <MudTd Style="text-align:right">
+                                @context.TotalRemovals.ToString("N0")
+                            </MudTd>
+                        </RowTemplate>
+                    </MudTable>
+                </MudCardContent>
+            </MudCard>
+        </MudItem>
+
+        <!-- Removals by Disposition -->
+        <MudItem xs="12" md="6" Class="mt-4">
+            <MudCard Elevation="2">
+                <MudCardHeader>
+                    <CardHeaderContent>
+                        <MudText Typo="Typo.h6">Removals by Case Category</MudText>
+                        <MudText Typo="Typo.body2" Color="Color.Secondary">
+                            Case category breakdown · FY2012–FY2023
                         </MudText>
                     </CardHeaderContent>
                 </MudCardHeader>
                 <MudCardContent>
                     <MudTable Items="_byDisposition" Dense="true" Hover="true" Striped="true">
                         <HeaderContent>
-                            <MudTh>Code</MudTh>
-                            <MudTh>Description</MudTh>
+                            <MudTh>Case Category</MudTh>
                             <MudTh Style="text-align:right">Count</MudTh>
                             <MudTh Style="text-align:right">%</MudTh>
                         </HeaderContent>
                         <RowTemplate>
                             <MudTd>
-                                <MudChip T="string" Size="Size.Small" Color="Color.Primary">
-                                    @context.DispositionCode
-                                </MudChip>
-                            </MudTd>
-                            <MudTd>
-                                <MudText Typo="Typo.body2">@context.DispositionLabel</MudText>
+                                <MudText Typo="Typo.body2">@context.DispositionCode</MudText>
                             </MudTd>
                             <MudTd Style="text-align:right">@context.Count.ToString("N0")</MudTd>
                             <MudTd Style="text-align:right">@context.Percent.ToString("F1")%</MudTd>
@@ -150,13 +172,13 @@ else
         </MudItem>
 
         <!-- Top Nationalities -->
-        <MudItem xs="12" Class="mt-4">
+        <MudItem xs="12" md="6" Class="mt-4">
             <MudCard Elevation="2">
                 <MudCardHeader>
                     <CardHeaderContent>
-                        <MudText Typo="Typo.h6">Top 15 Nationalities — Individual Records</MudText>
+                        <MudText Typo="Typo.h6">Top 15 Nationalities</MudText>
                         <MudText Typo="Typo.body2" Color="Color.Secondary">
-                            Source: ICE ERO FOIA data — FY2012 to FY2023
+                            By removal volume · FY2012 to FY2023
                         </MudText>
                     </CardHeaderContent>
                 </MudCardHeader>
@@ -185,16 +207,43 @@ else
     private bool _loading = true;
     private EnforcementSummaryDto? _summary;
     private List<RemovalsByAORDto> _byAOR = new();
+    private List<ArrestsByFieldOfficeDto> _byArrestAOR = new();
     private List<RemovalsByDispositionDto> _byDisposition = new();
     private List<RemovalsByNationalityICEDto> _byNationality = new();
 
     protected override async Task OnInitializedAsync()
     {
+        //_loading = true;
+        //await Task.WhenAll(
+        //    LoadSummary(),
+        //    LoadAOR(),
+        //    LoadArrestAOR(),
+        //    LoadDisposition(),
+        //    LoadNationalities()
+        //);
+        //_loading = false;
+        
         _loading = true;
         _summary = await Mediator.Send(new GetEnforcementSummary());
         _byAOR = await Mediator.Send(new GetRemovalsByAOR());
+        _byArrestAOR = await Mediator.Send(new GetArrestsByFieldOffice());
         _byDisposition = await Mediator.Send(new GetRemovalsByDisposition());
         _byNationality = await Mediator.Send(new GetTopNationalitiesICE(15));
         _loading = false;
     }
+
+    //private async Task LoadSummary()
+    //    => _summary = await Mediator.Send(new GetEnforcementSummary());
+
+    //private async Task LoadAOR()
+    //    => _byAOR = await Mediator.Send(new GetRemovalsByAOR());
+
+    //private async Task LoadArrestAOR()
+    //    => _byArrestAOR = await Mediator.Send(new GetArrestsByFieldOffice());
+
+    //private async Task LoadDisposition()
+    //    => _byDisposition = await Mediator.Send(new GetRemovalsByDisposition());
+
+    //private async Task LoadNationalities()
+    //    => _byNationality = await Mediator.Send(new GetTopNationalitiesICE(15));
 }

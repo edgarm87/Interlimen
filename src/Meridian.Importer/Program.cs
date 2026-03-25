@@ -355,25 +355,30 @@ static async Task ImportDdpRemovalsAsync(
                     continue;
                 }
 
+                var portOfDeparture = Str(ws.Row(row), 2);
                 var country = Str(ws.Row(row), 3);
-                if (string.IsNullOrWhiteSpace(country))
-                {
-                    skipped++;
-                    continue;
-                }
+                if (string.IsNullOrWhiteSpace(country)) { skipped++; continue; }
 
                 var caseStatus = Str(ws.Row(row), 4);
                 var caseCategory = Str(ws.Row(row), 5);
                 var finalOrderStr = Str(ws.Row(row), 6);
-                var hasFinalOrder = finalOrderStr?.Equals("YES", StringComparison.OrdinalIgnoreCase) == true;
+
+                // Derive criminality from case status
+                // "6-Deported/Removed - Deportability" = criminal grounds
+                // "8-Excluded/Removed - Inadmissibility" = non-criminal
+                var hasCriminal = caseStatus != null && (
+                    caseStatus.StartsWith("6-") ||
+                    caseStatus.StartsWith("5-") ||
+                    caseStatus.StartsWith("7-"));
 
                 var action = EnforcementAction.Create(
                     type: EnforcementActionType.Removal,
                     actionDate: departureDate,
                     dataSource: DataSource.DeportationDataProject,
                     nationality: country,
+                    areaOfResponsibility: portOfDeparture,
                     dispositionCode: caseCategory,
-                    hasCriminalConviction: null);
+                    hasCriminalConviction: hasCriminal);
 
                 batch.Add(action);
 

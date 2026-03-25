@@ -73,10 +73,10 @@ else
         <MudCardContent>
             @if (_systemTrend.Any())
             {
-                <ApexChart TItem="SystemTrendPoint"
+                <ApexChart TItem="PopulationTrendPointDto"
                            Height="350"
                            Options="_areaOptions">
-                    <ApexPointSeries TItem="SystemTrendPoint"
+                    <ApexPointSeries TItem="PopulationTrendPointDto"
                                      Items="_systemTrend"
                                      Name="Total Detained"
                                      SeriesType="SeriesType.Area"
@@ -95,7 +95,7 @@ else
     private bool _loading = true;
     private string _facilityName = "";
     private List<PopulationTrendPointDto> _trendData = new();
-    private List<SystemTrendPoint> _systemTrend = new();
+    private List<PopulationTrendPointDto> _systemTrend = new();
 
     private ApexChartOptions<PopulationTrendPointDto> _lineOptions = new()
     {
@@ -115,7 +115,7 @@ else
         }
     };
 
-    private ApexChartOptions<SystemTrendPoint> _areaOptions = new()
+    private ApexChartOptions<PopulationTrendPointDto> _areaOptions = new()
     {
         Chart = new Chart { Toolbar = new Toolbar { Show = false } },
         Stroke = new Stroke { Curve = Curve.Smooth, Width = new List<int> { 2 } },
@@ -154,29 +154,6 @@ else
 
     private async Task LoadSystemTrend()
     {
-        var facilities = await Mediator.Send(new GetActiveFacilitiesWithPopulation());
-        var allFacilityIds = facilities.Select(f => f.FacilityId).ToList();
-
-        // Build daily totals by summing across all facilities
-        var dailyTotals = new Dictionary<DateTime, int>();
-
-        foreach (var facilityId in allFacilityIds.Take(50)) // Sample top 50 for performance
-        {
-            var trend = await Mediator.Send(new GetFacilityTrend(facilityId, 24));
-            foreach (var point in trend)
-            {
-                var day = point.Date.Date;
-                if (!dailyTotals.ContainsKey(day))
-                    dailyTotals[day] = 0;
-                dailyTotals[day] += point.TotalDetained;
-            }
-        }
-
-        _systemTrend = dailyTotals
-            .OrderBy(x => x.Key)
-            .Select(x => new SystemTrendPoint(x.Key, x.Value))
-            .ToList();
+        _systemTrend = await Mediator.Send(new GetSystemPopulationTrend(24));
     }
-
-    public record SystemTrendPoint(DateTime Date, int TotalDetained);
 }
