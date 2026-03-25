@@ -278,4 +278,22 @@ public class EnforcementActionRepository
 
         return results.Select(x => (x.AOR, x.Total, x.Criminal)).ToList();
     }
+    
+    public async Task<int> GetCountByTypeAsync(
+        EnforcementActionType type, CancellationToken ct = default)
+        => await _db.EnforcementActions
+            .CountAsync(e => e.ActionType == type, ct);
+}
+
+public class IceDetainerRepository : Repository<IceDetainer>, IIceDetainerRepository
+{
+    public IceDetainerRepository(AppDbContext context) : base(context) { }
+
+    public async Task<int> GetActiveCountAsync(CancellationToken ct = default)
+    {
+        var cutoff = DateTime.UtcNow.AddMonths(-6);
+        return await _context.IceDetainers
+            .CountAsync(d => d.DepartedDate == null
+                             && d.DetainerPrepareDate >= cutoff, ct);
+    }
 }

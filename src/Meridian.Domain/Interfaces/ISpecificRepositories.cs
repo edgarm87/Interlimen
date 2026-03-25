@@ -52,6 +52,12 @@ public interface IEnforcementActionRepository : IRepository<EnforcementAction>
     Task<List<(string Code, int Count)>> GetByDispositionAsync(int? year, CancellationToken ct = default);
     Task<List<(string Nationality, int Count)>> GetTopNationalitiesAsync(int topN, int? year, CancellationToken ct = default);
     Task<(int Total, int Criminal, string TopNationality, string TopAOR, DateTime Earliest, DateTime Latest)> GetSummaryAsync(int? year, CancellationToken ct = default);
+    Task<int> GetCountByTypeAsync(EnforcementActionType type, CancellationToken ct = default);
+}
+
+public interface IIceDetainerRepository : IRepository<IceDetainer>
+{
+    Task<int> GetActiveCountAsync(CancellationToken ct = default);
 }
 
 public record CourtBacklogSummary(

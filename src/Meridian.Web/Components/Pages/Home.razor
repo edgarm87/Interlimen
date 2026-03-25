@@ -1,6 +1,11 @@
 @page "/"
 @using Microsoft.AspNetCore.Authorization
-@using Meridian.Application.Features.Removals
+@using Meridian.Application.Features.Enforcement
+@using Meridian.Application.Features.Detention
+@using Meridian.Domain.Entities
+@using ApexCharts
+@using Color = MudBlazor.Color
+@using Size = MudBlazor.Size
 @rendermode @(new InteractiveServerRenderMode(prerender: false))
 @attribute [Authorize]
 @inject IMediator Mediator
@@ -9,134 +14,192 @@
 
 <MudText Typo="Typo.h4" Class="mb-1">Dashboard</MudText>
 <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-6">
-    Immigration enforcement data — FY2013 to FY2022
+    ICE enforcement data · FY2012–Oct 2025 · Source: ICE ERO via FOIA
 </MudText>
 
 @if (_loading)
 {
     <MudProgressLinear Indeterminate="true" Color="Color.Primary" Class="mb-4" />
 }
+else
+{
+    <!-- KPI Row -->
+    <MudGrid Class="mb-4">
+        <MudItem xs="12" sm="6" md="3">
+            <StatCard Title="Total Arrests"
+                      Value="@_arrestCount.ToString("N0")"
+                      Icon="@Icons.Material.Filled.PersonSearch"
+                      Color="Color.Warning" />
+        </MudItem>
+        <MudItem xs="12" sm="6" md="3">
+            <StatCard Title="Total Removals"
+                      Value="@_removalCount.ToString("N0")"
+                      Icon="@Icons.Material.Filled.FlightTakeoff"
+                      Color="Color.Error" />
+        </MudItem>
+        <MudItem xs="12" sm="6" md="3">
+            <StatCard Title="Currently Detained"
+                      Value="@(_detentionSummary?.CurrentDetained.ToString("N0") ?? "—")"
+                      Icon="@Icons.Material.Filled.Lock"
+                      Color="Color.Secondary"
+                      Trend="@_detentionSummary?.TrendDisplay" />
+        </MudItem>
+        <MudItem xs="12" sm="6" md="3">
+            <StatCard Title="Active Detainers"
+                      Value="@_activeDetainers.ToString("N0")"
+                      Icon="@Icons.Material.Filled.Gavel"
+                      Color="Color.Info" />
+        </MudItem>
+    </MudGrid>
 
-<MudGrid>
-    <MudItem xs="12" sm="6" md="3">
-        <StatCard Title="Total Removals (2022)"
-                  Value="@_totalRemovals2022.ToString("N0")"
-                  Icon="@Icons.Material.Filled.FlightTakeoff"
-                  Color="Color.Error" />
-    </MudItem>
-    <MudItem xs="12" sm="6" md="3">
-        <StatCard Title="Criminal Removals (2022)"
-                  Value="@_criminalRemovals2022.ToString("N0")"
-                  Icon="@Icons.Material.Filled.Gavel"
-                  Color="Color.Warning" />
-    </MudItem>
-    <MudItem xs="12" sm="6" md="3">
-        <StatCard Title="Countries in Dataset"
-                  Value="@_countriesCount.ToString()"
-                  Icon="@Icons.Material.Filled.Flag"
-                  Color="Color.Info" />
-    </MudItem>
-    <MudItem xs="12" sm="6" md="3">
-        <StatCard Title="Years of Data"
-                  Value="10"
-                  Icon="@Icons.Material.Filled.CalendarMonth"
-                  Color="Color.Success" />
-    </MudItem>
-</MudGrid>
-
-<MudGrid Class="mt-4">
-    <MudItem xs="12" md="6">
-        <MudCard>
-            <MudCardHeader>
-                <CardHeaderContent>
-                    <MudText Typo="Typo.h6">Top Nationalities by Removals (2022)</MudText>
-                    <MudText Typo="Typo.body2" Color="Color.Secondary">
-                        Source: DHS OHSS Yearbook Table 42
-                    </MudText>
-                </CardHeaderContent>
-                <CardHeaderActions>
-                    <MudButton Variant="Variant.Text" Color="Color.Primary"
-                               Href="/removals/nationality">View All</MudButton>
-                </CardHeaderActions>
-            </MudCardHeader>
-            <MudCardContent>
-                @foreach (var item in _topNationalities)
-                {
-                    <div class="mb-3">
-                        <div class="d-flex justify-space-between mb-1">
-                            <MudText Typo="Typo.body2">@item.NationalityDisplay</MudText>
-                            <MudText Typo="Typo.body2" Color="Color.Secondary">
-                                @item.TotalRemovals.ToString("N0")
-                            </MudText>
-                        </div>
-                        <MudProgressLinear Value="@((double)item.PercentOfTotal)"
-                                           Color="Color.Primary"
-                                           Size="Size.Medium" />
-                        <MudText Typo="Typo.caption" Color="Color.Secondary">
-                            @item.PercentOfTotal.ToString("F1")% of all removals
+    <MudGrid>
+        <!-- Top Nationalities -->
+        <MudItem xs="12" md="6">
+            <MudCard Elevation="2">
+                <MudCardHeader>
+                    <CardHeaderContent>
+                        <MudText Typo="Typo.h6">Top Nationalities by Removal</MudText>
+                        <MudText Typo="Typo.body2" Color="Color.Secondary">
+                            FY2012–FY2023 · Individual records
                         </MudText>
-                    </div>
-                }
-            </MudCardContent>
-        </MudCard>
-    </MudItem>
+                    </CardHeaderContent>
+                    <CardHeaderActions>
+                        <MudButton Variant="Variant.Text" Color="Color.Primary"
+                                   Href="/removals/enforcement">View All</MudButton>
+                    </CardHeaderActions>
+                </MudCardHeader>
+                <MudCardContent>
+                    @foreach (var item in _topNationalities)
+                    {
+                        <div class="mb-3">
+                            <div class="d-flex justify-space-between mb-1">
+                                <MudText Typo="Typo.body2">@item.Nationality</MudText>
+                                <MudText Typo="Typo.body2" Color="Color.Secondary">
+                                    @item.Count.ToString("N0") (@item.Percent.ToString("F1")%)
+                                </MudText>
+                            </div>
+                            <MudProgressLinear Value="@((double)item.Percent)"
+                                               Color="Color.Primary"
+                                               Size="Size.Medium" />
+                        </div>
+                    }
+                </MudCardContent>
+            </MudCard>
+        </MudItem>
 
-    <MudItem xs="12" md="6">
-        <MudCard>
-            <MudCardHeader>
-                <CardHeaderContent>
-                    <MudText Typo="Typo.h6">Total Removals by Fiscal Year</MudText>
-                    <MudText Typo="Typo.body2" Color="Color.Secondary">
-                        FY2013 — FY2022
-                    </MudText>
-                </CardHeaderContent>
-            </MudCardHeader>
-            <MudCardContent>
-                <MudTable Items="_yearlyTotals" Dense="true" Hover="true" Striped="true">
-                    <HeaderContent>
-                        <MudTh>Year</MudTh>
-                        <MudTh Style="text-align:right">Total</MudTh>
-                        <MudTh Style="text-align:right">Criminal</MudTh>
-                        <MudTh Style="text-align:right">Non-Criminal</MudTh>
-                    </HeaderContent>
-                    <RowTemplate>
-                        <MudTd>FY@(context.Year)</MudTd>
-                        <MudTd Style="text-align:right">@context.TotalRemovals.ToString("N0")</MudTd>
-                        <MudTd Style="text-align:right">
-                            <MudText Color="Color.Error">@context.CriminalRemovals.ToString("N0")</MudText>
-                        </MudTd>
-                        <MudTd Style="text-align:right">@context.NonCriminalRemovals.ToString("N0")</MudTd>
-                    </RowTemplate>
-                </MudTable>
-            </MudCardContent>
-        </MudCard>
-    </MudItem>
-</MudGrid>
+        <!-- Arrests by Field Office -->
+        <MudItem xs="12" md="6">
+            <MudCard Elevation="2">
+                <MudCardHeader>
+                    <CardHeaderContent>
+                        <MudText Typo="Typo.h6">Arrests by Field Office</MudText>
+                        <MudText Typo="Typo.body2" Color="Color.Secondary">
+                            Sep 2023–Oct 2025 · Top 8 AORs
+                        </MudText>
+                    </CardHeaderContent>
+                    <CardHeaderActions>
+                        <MudButton Variant="Variant.Text" Color="Color.Primary"
+                                   Href="/removals/enforcement">View All</MudButton>
+                    </CardHeaderActions>
+                </MudCardHeader>
+                <MudCardContent>
+                    <MudTable Items="_arrestsByAOR.Take(8)" Dense="true" Hover="true" Striped="true">
+                        <HeaderContent>
+                            <MudTh>Field Office</MudTh>
+                            <MudTh Style="text-align:right">Arrests</MudTh>
+                            <MudTh Style="text-align:right">Criminal %</MudTh>
+                        </HeaderContent>
+                        <RowTemplate>
+                            <MudTd>@context.FieldOffice</MudTd>
+                            <MudTd Style="text-align:right">
+                                @context.TotalArrests.ToString("N0")
+                            </MudTd>
+                            <MudTd Style="text-align:right">
+                                <MudChip T="string" Size="Size.Small"
+                                         Color="@(context.CriminalPercent > 50 ? Color.Error : Color.Default)">
+                                    @context.CriminalPercent.ToString("F1")%
+                                </MudChip>
+                            </MudTd>
+                        </RowTemplate>
+                    </MudTable>
+                </MudCardContent>
+            </MudCard>
+        </MudItem>
+
+        <!-- Detention Population Trend -->
+        <MudItem xs="12" Class="mt-4">
+            <MudCard Elevation="2">
+                <MudCardHeader>
+                    <CardHeaderContent>
+                        <MudText Typo="Typo.h6">Detention Population Trend</MudText>
+                        <MudText Typo="Typo.body2" Color="Color.Secondary">
+                            Total detained daily — Sep 2023 to Oct 2025
+                        </MudText>
+                    </CardHeaderContent>
+                    <CardHeaderActions>
+                        <MudButton Variant="Variant.Text" Color="Color.Primary"
+                                   Href="/detention/trends">View Detail</MudButton>
+                    </CardHeaderActions>
+                </MudCardHeader>
+                <MudCardContent>
+                    @if (_systemTrend.Any())
+                    {
+                        <ApexChart TItem="PopulationTrendPointDto"
+                                   Height="250"
+                                   Options="_chartOptions">
+                            <ApexPointSeries TItem="PopulationTrendPointDto"
+                                             Items="_systemTrend"
+                                             Name="Total Detained"
+                                             SeriesType="SeriesType.Area"
+                                             XValue="@(e => e.Date.ToString("MM/dd/yyyy"))"
+                                             YValue="@(e => e.TotalDetained)"
+                                             Color="#1B4F72" />
+                        </ApexChart>
+                    }
+                </MudCardContent>
+            </MudCard>
+        </MudItem>
+    </MudGrid>
+}
 
 @code {
     private bool _loading = true;
-    private int _totalRemovals2022 = 0;
-    private int _criminalRemovals2022 = 0;
-    private int _countriesCount = 0;
-    private List<NationalityRankingDto> _topNationalities = new();
-    private List<YearlyRemovalTotalDto> _yearlyTotals = new();
+    private int _arrestCount;
+    private int _removalCount;
+    private int _activeDetainers;
+    private DetentionSummaryDto? _detentionSummary;
+    private List<RemovalsByNationalityICEDto> _topNationalities = new();
+    private List<ArrestsByFieldOfficeDto> _arrestsByAOR = new();
+    private List<PopulationTrendPointDto> _systemTrend = new();
+
+    private ApexChartOptions<PopulationTrendPointDto> _chartOptions = new()
+    {
+        Chart = new Chart { Toolbar = new Toolbar { Show = false } },
+        Stroke = new Stroke { Curve = Curve.Smooth, Width = new List<int> { 2 } },
+        DataLabels = new DataLabels { Enabled = false },
+        Xaxis = new XAxis { Type = XAxisType.Category, TickAmount = 12 },
+        Yaxis = new List<YAxis>
+        {
+            new YAxis
+            {
+                Labels = new YAxisLabels
+                {
+                    Formatter = "function(val) { return (val/1000).toFixed(0) + 'K'; }"
+                }
+            }
+        }
+    };
 
     protected override async Task OnInitializedAsync()
     {
         _loading = true;
-        try
-        {
-            _topNationalities = await Mediator.Send(new GetTopNationalities(8, 2022));
-            _yearlyTotals = await Mediator.Send(new GetYearlyRemovalTotals());
-
-            var fy2022 = _yearlyTotals.FirstOrDefault(y => y.Year == 2022);
-            _totalRemovals2022 = fy2022?.TotalRemovals ?? 0;
-            _criminalRemovals2022 = fy2022?.CriminalRemovals ?? 0;
-            _countriesCount = _topNationalities.Count > 0 ? 145 : 0;
-        }
-        finally
-        {
-            _loading = false;
-        }
+        _arrestCount = await Mediator.Send(new GetActionCount(EnforcementActionType.Arrest));
+        _removalCount = await Mediator.Send(new GetActionCount(EnforcementActionType.Removal));
+        _detentionSummary = await Mediator.Send(new GetDetentionSummary());
+        _activeDetainers = await Mediator.Send(new GetActiveDetainersCount());
+        _topNationalities = await Mediator.Send(new GetTopNationalitiesICE(8));
+        _arrestsByAOR = await Mediator.Send(new GetArrestsByFieldOffice());
+        _systemTrend = await Mediator.Send(new GetSystemPopulationTrend(14));
+        _loading = false;
     }
 }

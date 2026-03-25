@@ -46,6 +46,7 @@ public static class InfrastructureServiceRegistration
         services.AddScoped<IAlertRuleRepository, AlertRuleRepository>();
         services.AddScoped<ITenantRepository, TenantRepository>();
         services.AddScoped<IEnforcementActionRepository, EnforcementActionRepository>();
+        services.AddScoped<IIceDetainerRepository, IceDetainerRepository>();
 
         return services;
     }

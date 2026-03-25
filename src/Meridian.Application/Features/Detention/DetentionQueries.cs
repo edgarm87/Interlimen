@@ -117,3 +117,45 @@ public class GetSystemPopulationTrendHandler
             .ToList();
     }
 }
+
+public record GetDetentionSummary() : IRequest<DetentionSummaryDto>;
+
+public record DetentionSummaryDto(
+    int CurrentDetained,
+    int DetainedLastMonth,
+    string TrendDisplay
+);
+
+public class GetDetentionSummaryHandler
+    : IRequestHandler<GetDetentionSummary, DetentionSummaryDto>
+{
+    private readonly IDetentionFacilityRepository _facilities;
+
+    public GetDetentionSummaryHandler(IDetentionFacilityRepository facilities)
+        => _facilities = facilities;
+
+    public async Task<DetentionSummaryDto> Handle(
+        GetDetentionSummary request,
+        CancellationToken ct)
+    {
+        var results = await _facilities.GetSystemPopulationTrendAsync(14, ct);
+
+        if (!results.Any())
+            return new DetentionSummaryDto(0, 0, "");
+
+        var latest = results.Last();
+        var current = latest.Total;
+
+        var thirtyDaysAgo = latest.Date.AddDays(-30);
+        var lastMonth = results
+            .Where(x => x.Date <= thirtyDaysAgo)
+            .OrderByDescending(x => x.Date)
+            .FirstOrDefault();
+
+        var lastMonthTotal = lastMonth == default ? current : lastMonth.Total;
+        var diff = current - lastMonthTotal;
+        var trend = diff >= 0 ? $"+{diff:N0}" : $"{diff:N0}";
+
+        return new DetentionSummaryDto(current, lastMonthTotal, trend);
+    }
+}

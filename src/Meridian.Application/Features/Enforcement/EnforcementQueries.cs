@@ -1,3 +1,4 @@
+using Meridian.Domain.Entities;
 using Meridian.Domain.Interfaces;
 using MediatR;
 
@@ -35,12 +36,22 @@ public record RemovalsByNationalityICEDto(
     decimal Percent
 );
 
+public record ArrestsByFieldOfficeDto(
+    string FieldOffice,
+    int TotalArrests,
+    int CriminalArrests,
+    decimal CriminalPercent
+);
+
 // ── Queries ───────────────────────────────────────────────────────────────────
 
 public record GetRemovalsByAOR(int? Year = null) : IRequest<List<RemovalsByAORDto>>;
 public record GetRemovalsByDisposition(int? Year = null) : IRequest<List<RemovalsByDispositionDto>>;
 public record GetTopNationalitiesICE(int TopN = 10, int? Year = null) : IRequest<List<RemovalsByNationalityICEDto>>;
 public record GetEnforcementSummary(int? Year = null) : IRequest<EnforcementSummaryDto>;
+public record GetArrestsByFieldOffice(int? Year = null) : IRequest<List<ArrestsByFieldOfficeDto>>;
+public record GetActiveDetainersCount() : IRequest<int>;
+public record GetActionCount(EnforcementActionType ActionType) : IRequest<int>;
 
 // ── Handlers ──────────────────────────────────────────────────────────────────
 
@@ -75,7 +86,7 @@ public class GetRemovalsByDispositionHandler
 
         return results.Select(r => new RemovalsByDispositionDto(
             r.Code,
-            r.Code, // full label already in the data
+            r.Code,
             r.Count,
             total > 0 ? Math.Round((decimal)r.Count / total * 100, 1) : 0
         )).ToList();
@@ -124,16 +135,6 @@ public class GetEnforcementSummaryHandler
     }
 }
 
-public record ArrestsByFieldOfficeDto(
-    string FieldOffice,
-    int TotalArrests,
-    int CriminalArrests,
-    decimal CriminalPercent
-);
-
-public record GetArrestsByFieldOffice(int? Year = null)
-    : IRequest<List<ArrestsByFieldOfficeDto>>;
-
 public class GetArrestsByFieldOfficeHandler
     : IRequestHandler<GetArrestsByFieldOffice, List<ArrestsByFieldOfficeDto>>
 {
@@ -151,4 +152,23 @@ public class GetArrestsByFieldOfficeHandler
             r.Total > 0 ? Math.Round((decimal)r.Criminal / r.Total * 100, 1) : 0
         )).OrderByDescending(x => x.TotalArrests).ToList();
     }
+}
+
+public class GetActiveDetainersCountHandler
+    : IRequestHandler<GetActiveDetainersCount, int>
+{
+    private readonly IIceDetainerRepository _repo;
+    public GetActiveDetainersCountHandler(IIceDetainerRepository repo) => _repo = repo;
+
+    public async Task<int> Handle(GetActiveDetainersCount request, CancellationToken ct)
+        => await _repo.GetActiveCountAsync(ct);
+}
+
+public class GetActionCountHandler : IRequestHandler<GetActionCount, int>
+{
+    private readonly IEnforcementActionRepository _repo;
+    public GetActionCountHandler(IEnforcementActionRepository repo) => _repo = repo;
+
+    public async Task<int> Handle(GetActionCount request, CancellationToken ct)
+        => await _repo.GetCountByTypeAsync(request.ActionType, ct);
 }
