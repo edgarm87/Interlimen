@@ -1,6 +1,7 @@
 using Meridian.Domain.Entities;
 using Meridian.Domain.Interfaces;
 using Microsoft.EntityFrameworkCore;
+using Meridian.Application.Features.Detention;
 
 namespace Meridian.Infrastructure.Persistence.Repositories;
 
@@ -294,6 +295,88 @@ public class IceDetainerRepository : Repository<IceDetainer>, IIceDetainerReposi
         var cutoff = DateTime.UtcNow.AddMonths(-6);
         return await _context.IceDetainers
             .CountAsync(d => d.DepartedDate == null
+                && d.DetainerPrepareDate >= cutoff, ct);
+    }
+
+    public async Task<(int Total, int Active, int Removed, string TopState)> GetSummaryAsync(
+        CancellationToken ct = default)
+    {
+        var cutoff = DateTime.UtcNow.AddMonths(-6);
+
+        var total = await _context.IceDetainers.CountAsync(ct);
+        var active = await _context.IceDetainers
+            .CountAsync(d => d.DepartedDate == null
                              && d.DetainerPrepareDate >= cutoff, ct);
+        var removed = await _context.IceDetainers
+            .CountAsync(d => d.DepartedDate != null, ct);
+
+        var topState = await _context.IceDetainers
+            .Where(d => d.FacilityState != null)
+            .GroupBy(d => d.FacilityState)
+            .Select(g => new { State = g.Key!, Count = g.Count() })
+            .OrderByDescending(x => x.Count)
+            .Select(x => x.State)
+            .FirstOrDefaultAsync(ct) ?? "N/A";
+
+        return (total, active, removed, topState);
+    }
+
+    public async Task<(List<(Guid Id, DateTime PrepareDate, string? State, string? Aor, string? FacilityName, string? Country, string? Criminality, string? CaseStatus, DateTime? DepartedDate, string? DepartureCountry)> Items, int Total)> GetPagedAsync(
+        int page, int pageSize, string? state, string? country, string? criminality,
+        string? facilityName, bool? activeOnly, CancellationToken ct = default)
+    {
+        var query = _context.IceDetainers.AsNoTracking().AsQueryable();
+
+        if (!string.IsNullOrWhiteSpace(state))
+            query = query.Where(d => d.FacilityState == state);
+
+        if (!string.IsNullOrWhiteSpace(country))
+            query = query.Where(d => d.CitizenshipCountry == country);
+
+        if (!string.IsNullOrWhiteSpace(criminality))
+            query = query.Where(d => d.DetainerCriminality == criminality);
+
+        if (!string.IsNullOrWhiteSpace(facilityName))
+            query = query.Where(d => d.DetentionFacilityName != null &&
+                                     d.DetentionFacilityName.Contains(facilityName));
+
+        if (activeOnly == true)
+            query = query.Where(d => d.DepartedDate == null);
+
+        var total = await query.CountAsync(ct);
+
+        var items = await query
+            .OrderByDescending(d => d.DetainerPrepareDate)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .Select(d => new
+            {
+                d.Id,
+                d.DetainerPrepareDate,
+                d.FacilityState,
+                d.FacilityAor,
+                d.DetentionFacilityName,
+                d.CitizenshipCountry,
+                d.DetainerCriminality,
+                d.CaseStatus,
+                d.DepartedDate,
+                d.DepartureCountry
+            })
+            .ToListAsync(ct);
+
+        var result = items.Select(d => (
+            d.Id,
+            d.DetainerPrepareDate,
+            d.FacilityState,
+            d.FacilityAor,
+            d.DetentionFacilityName,
+            d.CitizenshipCountry,
+            d.DetainerCriminality,
+            d.CaseStatus,
+            d.DepartedDate,
+            d.DepartureCountry
+        )).ToList();
+
+        return (result, total);
     }
 }

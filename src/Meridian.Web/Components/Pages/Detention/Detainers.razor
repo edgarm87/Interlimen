@@ -1,0 +1,264 @@
+@page "/detention/detainers"
+@using Microsoft.AspNetCore.Authorization
+@rendermode @(new InteractiveServerRenderMode(prerender: false))
+@attribute [Authorize]
+@inject IMediator Mediator
+
+<PageTitle>Detainers — Meridian</PageTitle>
+
+<MudText Typo="Typo.h4" Class="mb-1">ICE Detainers</MudText>
+<MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-4">
+    ICE requests to local jails to hold individuals · Sep 2023–Oct 2025 · Source: ICE ERO via FOIA
+</MudText>
+
+@if (_loadingSummary)
+{
+    <MudProgressLinear Indeterminate="true" Color="Color.Primary" Class="mb-4" />
+}
+else
+{
+    <MudGrid Class="mb-4">
+        <MudItem xs="12" sm="6" md="3">
+            <MudCard Elevation="2">
+                <MudCardContent Class="pa-4">
+                    <MudText Typo="Typo.body2" Color="Color.Secondary">Total Detainers</MudText>
+                    <MudText Typo="Typo.h5" Class="font-weight-bold">
+                        @(_summary?.TotalDetainers.ToString("N0") ?? "—")
+                    </MudText>
+                    <MudText Typo="Typo.caption" Color="Color.Secondary">Sep 2023–Oct 2025</MudText>
+                </MudCardContent>
+            </MudCard>
+        </MudItem>
+        <MudItem xs="12" sm="6" md="3">
+            <MudCard Elevation="2">
+                <MudCardContent Class="pa-4">
+                    <MudText Typo="Typo.body2" Color="Color.Secondary">Active Detainers</MudText>
+                    <MudText Typo="Typo.h5" Class="font-weight-bold" Style="color:#F57C00">
+                        @(_summary?.ActiveDetainers.ToString("N0") ?? "—")
+                    </MudText>
+                    <MudText Typo="Typo.caption" Color="Color.Secondary">No departed date · last 6 months</MudText>
+                </MudCardContent>
+            </MudCard>
+        </MudItem>
+        <MudItem xs="12" sm="6" md="3">
+            <MudCard Elevation="2">
+                <MudCardContent Class="pa-4">
+                    <MudText Typo="Typo.body2" Color="Color.Secondary">Resulted in Removal</MudText>
+                    <MudText Typo="Typo.h5" Class="font-weight-bold" Style="color:#D32F2F">
+                        @(_summary?.ResultedInRemoval.ToString("N0") ?? "—")
+                    </MudText>
+                    <MudText Typo="Typo.caption" Color="Color.Secondary">Departed date recorded</MudText>
+                </MudCardContent>
+            </MudCard>
+        </MudItem>
+        <MudItem xs="12" sm="6" md="3">
+            <MudCard Elevation="2">
+                <MudCardContent Class="pa-4">
+                    <MudText Typo="Typo.body2" Color="Color.Secondary">Top State</MudText>
+                    <MudText Typo="Typo.h5" Class="font-weight-bold">
+                        @(_summary?.TopState ?? "—")
+                    </MudText>
+                    <MudText Typo="Typo.caption" Color="Color.Secondary">Highest detainer volume</MudText>
+                </MudCardContent>
+            </MudCard>
+        </MudItem>
+    </MudGrid>
+}
+
+<!-- Filters -->
+<MudCard Elevation="2" Class="mb-4">
+    <MudCardContent>
+        <MudGrid>
+            <MudItem xs="12" sm="6" md="3">
+                <MudTextField @bind-Value="_filterState"
+                              Label="State"
+                              Placeholder="e.g. TEXAS"
+                              Variant="Variant.Outlined"
+                              Clearable="true"
+                              Dense="true" />
+            </MudItem>
+            <MudItem xs="12" sm="6" md="3">
+                <MudTextField @bind-Value="_filterCountry"
+                              Label="Citizenship Country"
+                              Placeholder="e.g. MEXICO"
+                              Variant="Variant.Outlined"
+                              Clearable="true"
+                              Dense="true" />
+            </MudItem>
+            <MudItem xs="12" sm="6" md="3">
+                <MudSelect @bind-Value="_filterCriminality"
+                           Label="Criminality"
+                           Variant="Variant.Outlined"
+                           Clearable="true"
+                           Dense="true">
+                    <MudSelectItem Value="@("1 Convicted Criminal")">Convicted Criminal</MudSelectItem>
+                    <MudSelectItem Value="@("2 Pending Criminal Charges")">Pending Criminal Charges</MudSelectItem>
+                    <MudSelectItem Value="@("3 No Known Criminality")">No Known Criminality</MudSelectItem>
+                </MudSelect>
+            </MudItem>
+            <MudItem xs="12" sm="6" md="2">
+                <MudSwitch @bind-Value="_filterActiveOnly"
+                           Label="Active Only"
+                           Color="Color.Primary"
+                           Class="mt-2" />
+            </MudItem>
+            <MudItem xs="12" sm="6" md="1">
+                <MudButton Variant="Variant.Filled"
+                           Color="Color.Primary"
+                           OnClick="ApplyFilters"
+                           Class="mt-1"
+                           FullWidth="true">
+                    Search
+                </MudButton>
+            </MudItem>
+        </MudGrid>
+    </MudCardContent>
+</MudCard>
+
+<!-- Results Table -->
+<MudCard Elevation="2">
+    <MudCardHeader>
+        <CardHeaderContent>
+            <MudText Typo="Typo.h6">Detainer Records</MudText>
+            <MudText Typo="Typo.body2" Color="Color.Secondary">
+                @if (_pagedResult != null)
+                {
+                    @($"{_pagedResult.TotalCount:N0} records · Page {_currentPage} of {TotalPages}")
+                }
+            </MudText>
+        </CardHeaderContent>
+    </MudCardHeader>
+    <MudCardContent>
+        @if (_loadingData)
+        {
+            <MudProgressLinear Indeterminate="true" Color="Color.Primary" Class="mb-2" />
+        }
+        else if (_pagedResult?.Items.Any() == true)
+        {
+            <MudTable Items="_pagedResult.Items" Dense="true" Hover="true" Striped="true">
+                <HeaderContent>
+                    <MudTh>Prepare Date</MudTh>
+                    <MudTh>State</MudTh>
+                    <MudTh>Facility</MudTh>
+                    <MudTh>Nationality</MudTh>
+                    <MudTh>Criminality</MudTh>
+                    <MudTh>Status</MudTh>
+                    <MudTh>Departed</MudTh>
+                    <MudTh>Destination</MudTh>
+                </HeaderContent>
+                <RowTemplate>
+                    <MudTd>@context.PrepareDate.ToString("MM/dd/yyyy")</MudTd>
+                    <MudTd>@(context.FacilityState ?? "—")</MudTd>
+                    <MudTd>
+                        <MudText Typo="Typo.body2">@(context.FacilityName ?? "—")</MudText>
+                        <MudText Typo="Typo.caption" Color="Color.Secondary">@(context.FacilityAor ?? "")</MudText>
+                    </MudTd>
+                    <MudTd>@(context.CitizenshipCountry ?? "—")</MudTd>
+                    <MudTd>
+                        @if (context.Criminality != null)
+                        {
+                            <MudChip T="string" Size="Size.Small"
+                                     Color="@GetCriminalityColor(context.Criminality)">
+                                @GetCriminalityLabel(context.Criminality)
+                            </MudChip>
+                        }
+                        else
+                        {
+                            <MudText Typo="Typo.body2" Color="Color.Secondary">—</MudText>
+                        }
+                    </MudTd>
+                    <MudTd>
+                        <MudChip T="string" Size="Size.Small"
+                                 Color="@(context.IsActive ? Color.Warning : Color.Success)">
+                            @(context.IsActive ? "Active" : "Resolved")
+                        </MudChip>
+                    </MudTd>
+                    <MudTd>@(context.DepartedDate?.ToString("MM/dd/yyyy") ?? "—")</MudTd>
+                    <MudTd>@(context.DepartureCountry ?? "—")</MudTd>
+                </RowTemplate>
+            </MudTable>
+
+            <!-- Pagination -->
+            <div class="d-flex justify-center mt-4">
+                <MudPagination Count="TotalPages"
+                               Selected="_currentPage"
+                               SelectedChanged="OnPageChanged"
+                               Color="Color.Primary"
+                               ShowFirstButton="true"
+                               ShowLastButton="true" />
+            </div>
+        }
+        else
+        {
+            <MudText Typo="Typo.body2" Color="Color.Secondary" Class="pa-4">
+                No detainers found matching your filters.
+            </MudText>
+        }
+    </MudCardContent>
+</MudCard>
+
+@code {
+    private bool _loadingSummary = true;
+    private bool _loadingData = true;
+    private DetainerSummaryDto? _summary;
+    private PagedDetainersDto? _pagedResult;
+    private int _currentPage = 1;
+    private const int PageSize = 50;
+
+    private string? _filterState;
+    private string? _filterCountry;
+    private string? _filterCriminality;
+    private bool _filterActiveOnly;
+
+    private int TotalPages => _pagedResult == null ? 1
+        : (int)Math.Ceiling((double)_pagedResult.TotalCount / PageSize);
+
+    protected override async Task OnInitializedAsync()
+    {
+        _summary = await Mediator.Send(new GetDetainerSummary());
+        _loadingSummary = false;
+        await LoadData();
+    }
+
+    private async Task LoadData()
+    {
+        _loadingData = true;
+        _pagedResult = await Mediator.Send(new GetDetainers(
+            Page: _currentPage,
+            PageSize: PageSize,
+            State: string.IsNullOrWhiteSpace(_filterState) ? null : _filterState.Trim().ToUpper(),
+            CitizenshipCountry: string.IsNullOrWhiteSpace(_filterCountry) ? null : _filterCountry.Trim().ToUpper(),
+            Criminality: _filterCriminality,
+            ActiveOnly: _filterActiveOnly ? true : null
+        ));
+        _loadingData = false;
+    }
+
+    private async Task ApplyFilters()
+    {
+        _currentPage = 1;
+        await LoadData();
+    }
+
+    private async Task OnPageChanged(int page)
+    {
+        _currentPage = page;
+        await LoadData();
+    }
+
+    private Color GetCriminalityColor(string criminality)
+    {
+        if (criminality.StartsWith("1 ")) return Color.Error;
+        if (criminality.StartsWith("2 ")) return Color.Warning;
+        if (criminality.StartsWith("3 ")) return Color.Default;
+        return Color.Default;
+    }
+
+    private string GetCriminalityLabel(string criminality)
+    {
+        if (criminality.StartsWith("1 ")) return "Convicted";
+        if (criminality.StartsWith("2 ")) return "Pending";
+        if (criminality.StartsWith("3 ")) return criminality[2..].Trim();
+        return criminality;
+    }
+}

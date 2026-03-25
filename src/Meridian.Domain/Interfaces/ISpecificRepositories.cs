@@ -58,6 +58,8 @@ public interface IEnforcementActionRepository : IRepository<EnforcementAction>
 public interface IIceDetainerRepository : IRepository<IceDetainer>
 {
     Task<int> GetActiveCountAsync(CancellationToken ct = default);
+    Task<(int Total, int Active, int Removed, string TopState)> GetSummaryAsync(CancellationToken ct = default);
+    Task<(List<(Guid Id, DateTime PrepareDate, string? State, string? Aor, string? FacilityName, string? Country, string? Criminality, string? CaseStatus, DateTime? DepartedDate, string? DepartureCountry)> Items, int Total)> GetPagedAsync(int page, int pageSize, string? state, string? country, string? criminality, string? facilityName, bool? activeOnly, CancellationToken ct = default);
 }
 
 public record CourtBacklogSummary(

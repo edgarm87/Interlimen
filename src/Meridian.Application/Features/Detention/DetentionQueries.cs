@@ -24,21 +24,30 @@ public record PopulationTrendPointDto(
     int? NonCriminal
 );
 
+public record DetentionSummaryDto(
+    int CurrentDetained,
+    int DetainedLastMonth,
+    string TrendDisplay
+);
+
 // ── Queries ───────────────────────────────────────────────────────────────────
 
 public record GetActiveFacilitiesWithPopulation() : IRequest<List<FacilityPopulationDto>>;
+public record GetFacilityTrend(Guid FacilityId, int Months = 12) : IRequest<List<PopulationTrendPointDto>>;
+public record GetSystemPopulationTrend(int Months = 24) : IRequest<List<PopulationTrendPointDto>>;
+public record GetDetentionSummary() : IRequest<DetentionSummaryDto>;
+
+// ── Handlers ──────────────────────────────────────────────────────────────────
 
 public class GetActiveFacilitiesHandler
     : IRequestHandler<GetActiveFacilitiesWithPopulation, List<FacilityPopulationDto>>
 {
     private readonly IDetentionFacilityRepository _facilities;
-
     public GetActiveFacilitiesHandler(IDetentionFacilityRepository facilities)
         => _facilities = facilities;
 
     public async Task<List<FacilityPopulationDto>> Handle(
-        GetActiveFacilitiesWithPopulation request,
-        CancellationToken ct)
+        GetActiveFacilitiesWithPopulation request, CancellationToken ct)
     {
         var facilities = await _facilities.GetActiveWithLatestPopulationAsync(ct);
 
@@ -53,63 +62,42 @@ public class GetActiveFacilitiesHandler
                 : null;
 
             return new FacilityPopulationDto(
-                f.Id,
-                f.Name,
-                f.City,
-                f.State,
-                f.Type.ToString(),
-                f.RatedCapacity,
-                current,
-                occupancy,
-                latest?.SnapshotDate ?? DateTime.UtcNow
-            );
+                f.Id, f.Name, f.City, f.State,
+                f.Type.ToString(), f.RatedCapacity,
+                current, occupancy,
+                latest?.SnapshotDate ?? DateTime.UtcNow);
         }).ToList();
     }
 }
-
-public record GetFacilityTrend(Guid FacilityId, int Months = 12)
-    : IRequest<List<PopulationTrendPointDto>>;
 
 public class GetFacilityTrendHandler
     : IRequestHandler<GetFacilityTrend, List<PopulationTrendPointDto>>
 {
     private readonly IDetentionFacilityRepository _facilities;
-
     public GetFacilityTrendHandler(IDetentionFacilityRepository facilities)
         => _facilities = facilities;
 
     public async Task<List<PopulationTrendPointDto>> Handle(
-        GetFacilityTrend request,
-        CancellationToken ct)
+        GetFacilityTrend request, CancellationToken ct)
     {
         var snapshots = await _facilities.GetPopulationTrendAsync(
-            request.FacilityId,
-            request.Months,
-            ct);
+            request.FacilityId, request.Months, ct);
 
         return snapshots.Select(s => new PopulationTrendPointDto(
-            s.SnapshotDate,
-            s.TotalDetained,
-            s.CriminalCount,
-            s.NonCriminalCount
+            s.SnapshotDate, s.TotalDetained, s.CriminalCount, s.NonCriminalCount
         )).ToList();
     }
 }
-
-public record GetSystemPopulationTrend(int Months = 24)
-    : IRequest<List<PopulationTrendPointDto>>;
 
 public class GetSystemPopulationTrendHandler
     : IRequestHandler<GetSystemPopulationTrend, List<PopulationTrendPointDto>>
 {
     private readonly IDetentionFacilityRepository _facilities;
-
     public GetSystemPopulationTrendHandler(IDetentionFacilityRepository facilities)
         => _facilities = facilities;
 
     public async Task<List<PopulationTrendPointDto>> Handle(
-        GetSystemPopulationTrend request,
-        CancellationToken ct)
+        GetSystemPopulationTrend request, CancellationToken ct)
     {
         var results = await _facilities.GetSystemPopulationTrendAsync(request.Months, ct);
         return results
@@ -118,25 +106,15 @@ public class GetSystemPopulationTrendHandler
     }
 }
 
-public record GetDetentionSummary() : IRequest<DetentionSummaryDto>;
-
-public record DetentionSummaryDto(
-    int CurrentDetained,
-    int DetainedLastMonth,
-    string TrendDisplay
-);
-
 public class GetDetentionSummaryHandler
     : IRequestHandler<GetDetentionSummary, DetentionSummaryDto>
 {
     private readonly IDetentionFacilityRepository _facilities;
-
     public GetDetentionSummaryHandler(IDetentionFacilityRepository facilities)
         => _facilities = facilities;
 
     public async Task<DetentionSummaryDto> Handle(
-        GetDetentionSummary request,
-        CancellationToken ct)
+        GetDetentionSummary request, CancellationToken ct)
     {
         var results = await _facilities.GetSystemPopulationTrendAsync(14, ct);
 
