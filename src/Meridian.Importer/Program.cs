@@ -164,19 +164,23 @@ static async Task<Dictionary<string, Guid>> UpsertFacilitiesAsync(
     return result;
 }
 
-// ── DDP Arrests (1dec2025 only — Sep 2023–Oct 2025) ──────────────────────────
+#region DDP Arrests
+
+// ── DDP Arrests ──────────────────────────
 
 static async Task ImportDdpArrestsAsync(
     string dataPath,
     IServiceProvider services,
     ILogger logger)
 {
-    var arrestsDir = Path.Combine(dataPath, "ice_release_1dec2025");
-    var files = FindXlsx(arrestsDir, "*Arrests*");
+    // Collect files from both releases
+    var files = new List<string>();
+    files.AddRange(FindXlsx(Path.Combine(dataPath, "ice_release_1dec2025"), "*Arrests*"));
+    files.AddRange(FindXlsx(Path.Combine(dataPath, "ice_release_mar2026"), "*Arrests*"));
 
     if (!files.Any())
     {
-        logger.LogError("No arrests files found in {Path}", arrestsDir);
+        logger.LogError("No arrests files found in {Path}", dataPath);
         return;
     }
 
@@ -193,7 +197,6 @@ static async Task ImportDdpArrestsAsync(
         var ws = wb.Worksheet(1);
         var lastRow = ws.LastRowUsed()?.RowNumber() ?? 0;
 
-        // Find header row (row 7 in Dec 2025 release)
         int headerRow = 7;
         var batch = new List<EnforcementAction>();
         const int batchSize = 500;
@@ -209,44 +212,46 @@ static async Task ImportDdpArrestsAsync(
 
         logger.LogInformation("Headers found: {Headers}", string.Join(", ", headers.Keys));
 
+        // Detect schema version — old Dec 2025 vs new Mar 2026
+        var isNewSchema = headers.ContainsKey("TOA Current Duty AOR");
+
         for (int row = headerRow + 1; row <= lastRow; row++)
         {
             try
             {
                 var appDateVal = ws.Cell(row, headers.GetValueOrDefault("Apprehension Date", 1)).Value;
-                if (appDateVal.IsBlank)
-                {
-                    skipped++;
-                    continue;
-                }
+                if (appDateVal.IsBlank) { skipped++; continue; }
 
                 DateTime appDate;
                 if (appDateVal.IsDateTime) appDate = Utc(appDateVal.GetDateTime());
                 else if (DateTime.TryParse(appDateVal.ToString(), out var pd)) appDate = Utc(pd);
-                else
-                {
-                    skipped++;
-                    continue;
-                }
+                else { skipped++; continue; }
 
+                // AOR column name changed between releases
+                var aorColName = isNewSchema ? "TOA Current Duty AOR" : "Apprehension AOR";
+                var aor = headers.TryGetValue(aorColName, out var aorCol)
+                    ? Str(ws.Row(row), aorCol) : null;
+
+                // Nationality
                 var nationality = headers.TryGetValue("Citizenship Country", out var cc)
-                    ? Str(ws.Row(row), cc)
-                    : null;
-                var aor = headers.TryGetValue("Apprehension AOR", out var aorCol)
-                    ? Str(ws.Row(row), aorCol)
-                    : null;
+                    ? Str(ws.Row(row), cc) : null;
+
+                // Apprehension method
                 var method = headers.TryGetValue("Apprehension Method", out var mCol)
-                    ? Str(ws.Row(row), mCol)
-                    : null;
+                    ? Str(ws.Row(row), mCol) : null;
+
+                // Criminality
                 var criminality = headers.TryGetValue("Apprehension Criminality", out var crCol)
-                    ? Str(ws.Row(row), crCol)
-                    : null;
-                var uniqueId = headers.TryGetValue("Unique Identifier", out var uiCol)
-                    ? Str(ws.Row(row), uiCol)
-                    : null;
-                var caseStatus = headers.TryGetValue("Case Status", out var csCol)
-                    ? Str(ws.Row(row), csCol)
-                    : null;
+                    ? Str(ws.Row(row), crCol) : null;
+
+                // Unique identifier — renamed in new schema
+                var uniqueIdColName = isNewSchema ? "Anonymized Identifier" : "Unique Identifier";
+                var uniqueId = headers.TryGetValue(uniqueIdColName, out var uiCol)
+                    ? Str(ws.Row(row), uiCol) : null;
+
+                // New fields in Mar 2026 schema
+                var apprehensionType = headers.TryGetValue("Apprehension Type", out var atCol)
+                    ? Str(ws.Row(row), atCol) : null;
 
                 var hasCriminal = criminality != null && (
                     criminality.StartsWith("1 ") ||
@@ -262,7 +267,8 @@ static async Task ImportDdpArrestsAsync(
                     areaOfResponsibility: aor,
                     apprehensionMethod: method,
                     hasCriminalConviction: hasCriminal,
-                    uniqueIdentifier: uniqueId);
+                    uniqueIdentifier: uniqueId,
+                    apprehensionType: apprehensionType);
 
                 batch.Add(action);
 
@@ -300,6 +306,10 @@ static async Task ImportDdpArrestsAsync(
     logger.LogInformation("DDP Arrests complete — Total: {T:N0}, Skipped: {S:N0}, Errors: {E:N0}",
         totalImported, totalSkipped, totalErrors);
 }
+
+#endregion
+
+#region DDP Removals
 
 // ── DDP Removals (ICFO_42034 FY2012–FY2023) ───────────────────────────────────
 
@@ -419,6 +429,10 @@ static async Task ImportDdpRemovalsAsync(
     logger.LogInformation("DDP Removals complete — Total: {T:N0}, Skipped: {S:N0}, Errors: {E:N0}",
         totalImported, totalSkipped, totalErrors);
 }
+
+#endregion
+
+#region DDP Detentions
 
 // ── DDP Detentions (ICFO_42034 FY2012–FY2023 + 1dec2025) ─────────────────────
 
@@ -641,6 +655,10 @@ static async Task ImportDdpDetentionsAsync(
         totalImported, totalSkipped, totalErrors);
 }
 
+#endregion
+
+#region DDP Detainers
+
 // ── DDP Detainers (1dec2025 only) ─────────────────────────────────────────────
 
 static async Task ImportDdpDetainersAsync(
@@ -648,12 +666,13 @@ static async Task ImportDdpDetainersAsync(
     IServiceProvider services,
     ILogger logger)
 {
-    var detainersDir = Path.Combine(dataPath, "ice_release_1dec2025");
-    var files = FindXlsx(detainersDir, "*Detainer*");
+    var files = new List<string>();
+    files.AddRange(FindXlsx(Path.Combine(dataPath, "ice_release_1dec2025"), "*Detainer*"));
+    files.AddRange(FindXlsx(Path.Combine(dataPath, "ice_release_mar2026"), "*Detainer*"));
 
     if (!files.Any())
     {
-        logger.LogError("No detainers files found in {Path}", detainersDir);
+        logger.LogError("No detainers files found in {Path}", dataPath);
         return;
     }
 
@@ -814,6 +833,8 @@ static async Task ImportDdpDetainersAsync(
     logger.LogInformation("DDP Detainers complete — Total: {T:N0}, Skipped: {S:N0}, Errors: {E:N0}",
         totalImported, totalSkipped, totalErrors);
 }
+
+#endregion
 
 // ── Header row detector ───────────────────────────────────────────────────────
 
@@ -1068,6 +1089,8 @@ static async Task ImportDetentionAsync(
         facilities.Count, imported, skipped);
 }
 
+#region Provision Trial User
+
 static async Task ProvisionTrialUserAsync(
     string[] args,
     IServiceProvider services,
@@ -1132,3 +1155,5 @@ static async Task ProvisionTrialUserAsync(
         "Trial account created — {Email} / {OrgName} / expires {Expiry:yyyy-MM-dd}",
         email, orgName, DateTime.UtcNow.AddDays(14));
 }
+
+#endregion

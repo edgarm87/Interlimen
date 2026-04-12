@@ -429,6 +429,9 @@ namespace Meridian.Infrastructure.Migrations
                     b.Property<string>("ApprehensionMethod")
                         .HasColumnType("text");
 
+                    b.Property<string>("ApprehensionType")
+                        .HasColumnType("text");
+
                     b.Property<string>("AreaOfResponsibility")
                         .HasColumnType("text");
 

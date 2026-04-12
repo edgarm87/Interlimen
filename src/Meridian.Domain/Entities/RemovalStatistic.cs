@@ -60,6 +60,7 @@ public class EnforcementAction : BaseEntity
     
     public string? DispositionCode { get; private set; }
     public string? UniqueIdentifier { get; private set; }
+    public string? ApprehensionType { get; private set; }
 
     private EnforcementAction() { }
 
@@ -76,7 +77,8 @@ public class EnforcementAction : BaseEntity
         bool? hasCriminalConviction = null,
         string? mostSeriousOffense = null,
         string? bookingFacility = null,
-        string? uniqueIdentifier = null)
+        string? uniqueIdentifier = null,
+        string? apprehensionType = null)
     {
         return new EnforcementAction
         {
@@ -92,7 +94,8 @@ public class EnforcementAction : BaseEntity
             HasCriminalConviction = hasCriminalConviction,
             MostSeriousOffense = mostSeriousOffense,
             BookingFacility = bookingFacility,
-            UniqueIdentifier = uniqueIdentifier
+            UniqueIdentifier = uniqueIdentifier,
+            ApprehensionType = apprehensionType
         };
     }
 }

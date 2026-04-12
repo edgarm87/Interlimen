@@ -126,6 +126,7 @@ public class AppDbContext : IdentityDbContext<AppUser>
             e.HasIndex(x => x.SourceRecordId);
             e.Property(x => x.DispositionCode).HasMaxLength(200);
             e.Property(x => x.UniqueIdentifier).HasMaxLength(100);
+            e.Property(x => x.ApprehensionType).HasMaxLength(100);
             e.HasIndex(x => x.UniqueIdentifier);
         });
 
