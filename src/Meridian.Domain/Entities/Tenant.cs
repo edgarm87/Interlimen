@@ -44,6 +44,13 @@ public class Tenant : BaseEntity
         SetUpdated();
     }
 
+    public void StartTrial(int days = 14)
+    {
+        SubscriptionExpiresAt = DateTime.UtcNow.AddDays(days);
+        Status = SubscriptionStatus.Trialing;
+        SetUpdated();
+    }
+
     public bool CanAddSeat(int currentSeatCount) => currentSeatCount < MaxSeats;
 }
 

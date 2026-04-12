@@ -61,6 +61,9 @@ switch (command)
     case "ddp-detainers":
         await ImportDdpDetainersAsync(dataPath, host.Services, logger);
         break;
+    case "provision":
+        await ProvisionTrialUserAsync(args, host.Services, logger);
+        break;
     default:
         logger.LogInformation(
             "Available commands: removals, detention, ddp-arrests, ddp-removals, ddp-detentions, ddp-detainers");
@@ -1063,4 +1066,69 @@ static async Task ImportDetentionAsync(
 
     logger.LogInformation("Detention import complete — Facilities: {F}, Snapshots: {S}, Skipped: {Sk}",
         facilities.Count, imported, skipped);
+}
+
+static async Task ProvisionTrialUserAsync(
+    string[] args,
+    IServiceProvider services,
+    ILogger logger)
+{
+    // Usage: provision "Firm Name" "First" "Last" "email@firm.com" "Password123!"
+    if (args.Length < 6)
+    {
+        logger.LogError("Usage: provision \"Org Name\" \"First\" \"Last\" \"email\" \"password\"");
+        return;
+    }
+
+    var orgName   = args[1];
+    var firstName = args[2];
+    var lastName  = args[3];
+    var email     = args[4];
+    var password  = args[5];
+
+    using var scope = services.CreateScope();
+    var uow = scope.ServiceProvider
+        .GetRequiredService<IUnitOfWork>();
+    var userManager = scope.ServiceProvider
+        .GetRequiredService<Microsoft.AspNetCore.Identity.UserManager<Meridian.Infrastructure.Identity.AppUser>>();
+
+    var existing = await userManager.FindByEmailAsync(email);
+    if (existing != null)
+    {
+        logger.LogError("User {Email} already exists", email);
+        return;
+    }
+
+    var slug = System.Text.RegularExpressions.Regex
+        .Replace(orgName.ToLower().Trim(), @"[^a-z0-9]+", "-")
+        .Trim('-');
+
+    var tenant = Tenant.Create(orgName, slug, SubscriptionTier.Pro, 3);
+    tenant.StartTrial(14);
+    await uow.Tenants.AddAsync(tenant);
+    await uow.SaveChangesAsync();
+
+    var user = new Meridian.Infrastructure.Identity.AppUser
+    {
+        UserName = email,
+        Email = email,
+        FirstName = firstName,
+        LastName = lastName,
+        TenantId = tenant.Id,
+        Role = Meridian.Infrastructure.Identity.UserRole.Owner,
+        EmailConfirmed = true
+    };
+
+    var result = await userManager.CreateAsync(user, password);
+
+    if (!result.Succeeded)
+    {
+        logger.LogError("Failed: {Errors}",
+            string.Join(", ", result.Errors.Select(e => e.Description)));
+        return;
+    }
+
+    logger.LogInformation(
+        "Trial account created — {Email} / {OrgName} / expires {Expiry:yyyy-MM-dd}",
+        email, orgName, DateTime.UtcNow.AddDays(14));
 }
