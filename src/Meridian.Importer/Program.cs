@@ -730,12 +730,10 @@ static async Task ImportDdpDetainersAsync(
                     dataSource: DataSource.DeportationDataProject,
                     facilityState: Col("Facility State") > 0 ? Str(ws.Row(row), Col("Facility State")) : null,
                     facilityAor: Col("Facility AOR") > 0 ? Str(ws.Row(row), Col("Facility AOR")) : null,
-                    detentionFacilityName: Col("Detention Facility") > 0
-                        ? Str(ws.Row(row), Col("Detention Facility"))
-                        : null,
-                    detentionFacilityCode: Col("Detention Facility Code") > 0
-                        ? Str(ws.Row(row), Col("Detention Facility Code"))
-                        : null,
+                    detentionFacilityName: Col("Detention Facility") > 0 ? Str(ws.Row(row), Col("Detention Facility")) :
+                    Col("Detainer Facility") > 0 ? Str(ws.Row(row), Col("Detainer Facility")) : null,
+                    detentionFacilityCode: Col("Detention Facility Code") > 0 ? Str(ws.Row(row), Col("Detention Facility Code")) :
+                    Col("Detainer Facility Code") > 0 ? Str(ws.Row(row), Col("Detainer Facility Code")) : null,
                     facilityCity: Col("Facility City") > 0 ? Str(ws.Row(row), Col("Facility City")) : null,
                     portOfDeparture: Col("Port of Departure") > 0 ? Str(ws.Row(row), Col("Port of Departure")) : null,
                     departureCountry: Col("Departure Country") > 0 ? Str(ws.Row(row), Col("Departure Country")) : null,
@@ -746,12 +744,10 @@ static async Task ImportDdpDetainersAsync(
                         : null,
                     caseStatus: Col("Case Status") > 0 ? Str(ws.Row(row), Col("Case Status")) : null,
                     caseCategory: Col("Case Category") > 0 ? Str(ws.Row(row), Col("Case Category")) : null,
-                    detainerCriminality: Col("Detainer Prepared Criminality") > 0
-                        ? Str(ws.Row(row), Col("Detainer Prepared Criminality"))
-                        : null,
-                    threatLevel: Col("Detainer Prep Threat Level") > 0
-                        ? Str(ws.Row(row), Col("Detainer Prep Threat Level"))
-                        : null,
+                    detainerCriminality: Col("Detainer Prepared Criminality") > 0 ? Str(ws.Row(row), Col("Detainer Prepared Criminality")) :
+                    Col("Detainer Criminality") > 0 ? Str(ws.Row(row), Col("Detainer Criminality")) : null,
+                    threatLevel: Col("Detainer Prep Threat Level") > 0 ? Str(ws.Row(row), Col("Detainer Prep Threat Level")) :
+                    Col("Detainer Threat Level") > 0 ? Str(ws.Row(row), Col("Detainer Threat Level")) : null,
                     processingDisposition: Col("Processing Disposition") > 0
                         ? Str(ws.Row(row), Col("Processing Disposition"))
                         : null,
@@ -788,14 +784,14 @@ static async Task ImportDdpDetainersAsync(
                     violentMisdemeanor: Col("Violent Misdemeanor Yes No") > 0
                         ? ParseYesNo(ws.Cell(row, Col("Violent Misdemeanor Yes No")).GetValue<string>())
                         : null,
-                    mostSeriousConvictionCharge: Col("Most Serious Conviction (MSC) Charge") > 0
-                        ? Str(ws.Row(row), Col("Most Serious Conviction (MSC) Charge"))
-                        : null,
+                    mostSeriousConvictionCharge: Col("Most Serious Conviction (MSC) Charge") > 0 ? Str(ws.Row(row), Col("Most Serious Conviction (MSC) Charge")) :
+                    Col("MSC Charge") > 0 ? Str(ws.Row(row), Col("MSC Charge")) : null,
                     detainerType: Col("Detainer Type") > 0 ? Str(ws.Row(row), Col("Detainer Type")) : null,
                     detainerLiftReason: Col("Detainer Lift Reason") > 0
                         ? Str(ws.Row(row), Col("Detainer Lift Reason"))
                         : null,
-                    uniqueIdentifier: Col("Unique Identifier") > 0 ? Str(ws.Row(row), Col("Unique Identifier")) : null);
+                    uniqueIdentifier: Col("Unique Identifier") > 0 ? Str(ws.Row(row), Col("Unique Identifier")) :
+                    Col("Anonymized Identifier") > 0 ? Str(ws.Row(row), Col("Anonymized Identifier")) : null);
 
                 batch.Add(detainer);
 
