@@ -17,6 +17,7 @@ public static class InfrastructureServiceRegistration
         IConfiguration configuration)
     {
         // PostgreSQL
+        AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
         services.AddDbContext<AppDbContext>(options =>
             options.UseNpgsql(
                 configuration.GetConnectionString("DefaultConnection"),

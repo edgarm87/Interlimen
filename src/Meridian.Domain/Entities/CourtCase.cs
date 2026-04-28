@@ -5,7 +5,7 @@ namespace Meridian.Domain.Entities;
 public class CourtCase : BaseEntity
 {
     public string CaseNumber { get; private set; } = default!;
-    public string? RespondentNationality { get; private set; }
+    public string? RespondentNationality { get; set; }
     public string? RespondentCustodyStatus { get; private set; }
 
     // Court & Judge
@@ -37,24 +37,26 @@ public class CourtCase : BaseEntity
     private CourtCase() { }
 
     public static CourtCase Create(
-        string caseNumber,
-        string courtCity,
-        string courtState,
-        Guid judgeId,
-        CaseType caseType,
-        DataSource dataSource)
+    string caseNumber,
+    string courtCity,
+    string courtState,
+    Guid judgeId,
+    CaseType caseType,
+    DataSource dataSource,
+    string? sourceRecordId = null)
+{
+    return new CourtCase
     {
-        return new CourtCase
-        {
-            CaseNumber = caseNumber,
-            CourtCity = courtCity,
-            CourtState = courtState,
-            JudgeId = judgeId,
-            CaseType = caseType,
-            Status = CaseStatus.Pending,
-            DataSource = dataSource
-        };
-    }
+        CaseNumber = caseNumber,
+        CourtCity = courtCity,
+        CourtState = courtState,
+        JudgeId = judgeId,
+        CaseType = caseType,
+        Status = CaseStatus.Pending,
+        DataSource = dataSource,
+        SourceRecordId = sourceRecordId
+    };
+}
 
     public void UpdateOutcome(CaseOutcome outcome, DateTime decisionDate)
     {

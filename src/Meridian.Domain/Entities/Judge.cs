@@ -67,4 +67,11 @@ public class Judge : BaseEntity
         StatsLastRefreshed = DateTime.UtcNow;
         SetUpdated();
     }
+
+    public void UpdateCourtLocation(string city, string state)
+    {
+        CourtCity = city;
+        CourtState = state;
+        SetUpdated();
+    }
 }

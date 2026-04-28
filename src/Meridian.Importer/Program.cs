@@ -12,6 +12,8 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using System.Globalization;
 
+AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
+
 var host = Host.CreateDefaultBuilder(args)
     .ConfigureAppConfiguration((ctx, cfg) =>
     {
@@ -64,9 +66,12 @@ switch (command)
     case "provision":
         await ProvisionTrialUserAsync(args, host.Services, logger);
         break;
+    case "eoir":
+        await ImportEoirAsync(dataPath, host.Services, logger);
+    break;
     default:
         logger.LogInformation(
-            "Available commands: removals, detention, ddp-arrests, ddp-removals, ddp-detentions, ddp-detainers");
+            "Available commands: removals, detention, ddp-arrests, ddp-removals, ddp-detentions, ddp-detainers, provision, eoir");
         break;
 }
 
@@ -1153,3 +1158,260 @@ static async Task ProvisionTrialUserAsync(
 }
 
 #endregion
+
+#region EOIR Importer
+
+// ── EOIR Importer ─────────────────────────────────────────────────────────────
+
+static async Task ImportEoirAsync(
+    string dataPath,
+    IServiceProvider services,
+    ILogger logger,
+    bool testmode = false)
+{
+    var eoirPath = Path.Combine(
+        Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
+        "Downloads", "EOIR Case Data 2026-0301");
+
+    var lookupPath = Path.Combine(eoirPath, "Lookup");
+    var casePath = Path.Combine(eoirPath, "EOIR Case Data");
+
+    logger.LogInformation("EOIR import starting from {Path}", eoirPath);
+
+    // ── Step 1: Load lookup tables into memory ────────────────────────────────
+
+    // Load nationalities
+    var nationalities = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+    foreach (var line in File.ReadLines(Path.Combine(lookupPath, "tblLookupNationality.csv"))
+        .Skip(1))
+    {
+        var parts = line.Split('\t');
+        if (parts.Length >= 3 && !string.IsNullOrWhiteSpace(parts[1]))
+            nationalities[parts[1].Trim()] = parts[2].Trim();
+    }
+    logger.LogInformation("Loaded {Count} nationality codes", nationalities.Count);
+
+    // Load base cities (courts)
+    var courts = new Dictionary<string, (string Name, string City, string State)>(
+        StringComparer.OrdinalIgnoreCase);
+    foreach (var line in File.ReadLines(Path.Combine(lookupPath, "tblLookupBaseCity.csv"))
+        .Skip(1))
+    {
+        var parts = line.Split('\t');
+        if (parts.Length >= 7 && !string.IsNullOrWhiteSpace(parts[1]))
+            courts[parts[1].Trim()] = (
+                parts[2].Trim(),
+                parts[5].Trim(),
+                parts[6].Trim());
+    }
+    logger.LogInformation("Loaded {Count} court codes", courts.Count);
+
+    // ── Step 2: Import judges ─────────────────────────────────────────────────
+
+    logger.LogInformation("Importing judges...");
+    var judgeCodeToId = new Dictionary<string, Guid>(StringComparer.OrdinalIgnoreCase);
+
+    using (var scope = services.CreateScope())
+    {
+        var ctx = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+
+        var judgeLines = File.ReadLines(
+            Path.Combine(lookupPath, "tblLookupJudge.csv")).Skip(1).ToList();
+
+        var batch = new List<Judge>();
+
+        foreach (var line in judgeLines)
+        {
+            var parts = line.Split('\t');
+            if (parts.Length < 3) continue;
+
+            var code = parts[1].Trim();
+            var fullName = parts[2].Trim();
+            var isActive = parts.Length > 11 && parts[11].Trim() == "1";
+
+            if (string.IsNullOrWhiteSpace(code) || string.IsNullOrWhiteSpace(fullName))
+                continue;
+            if (code == "AAA") continue; // skip "<All Judges>" placeholder
+
+            // Parse "LastName, FirstName" format
+            var nameParts = fullName.Split(',', 2);
+            var lastName = nameParts[0].Trim().TrimEnd('.');
+            var firstName = nameParts.Length > 1 ? nameParts[1].Trim().TrimEnd('.') : "";
+
+            // Find court for this judge — look in proceedings later
+            // For now use code as court placeholder
+            var judge = Judge.Create(
+                firstName: string.IsNullOrWhiteSpace(firstName) ? lastName : firstName,
+                lastName: lastName,
+                courtCity: "",
+                courtState: "",
+                courtCode: code);
+
+            batch.Add(judge);
+            judgeCodeToId[code] = judge.Id;
+        }
+
+        await ctx.Judges.AddRangeAsync(batch);
+        await ctx.SaveChangesAsync();
+        logger.LogInformation("Imported {Count} judges", batch.Count);
+    }
+
+    // ── Step 3: Import proceedings as court cases ─────────────────────────────
+
+    logger.LogInformation("Importing proceedings (this will take a while)...");
+
+    var proceedingFile = Path.Combine(casePath, "B_TblProceeding.csv");
+    int imported = 0, skipped = 0, errors = 0;
+    const int batchSize = 1000;
+
+    // Decision code → CaseOutcome mapping
+    static CaseOutcome? MapDecCode(string? code) => code?.Trim() switch
+    {
+        "G" or "C" or "A" or "S" => CaseOutcome.GrantedRelief,
+        "X" or "D" or "E" => CaseOutcome.OrderOfRemoval,
+        "V" => CaseOutcome.VoluntaryDeparture,
+        "T" => CaseOutcome.Terminated,
+        "W" => CaseOutcome.Withdrawn,
+        "R" or "O" => CaseOutcome.Other,
+        _ => null
+    };
+
+    // CaseType mapping
+    static CaseType MapCaseType(string? code) => code?.Trim() switch
+    {
+        "ASY" => CaseType.Asylum,
+        "RMV" => CaseType.Removal,
+        "CAN" => CaseType.CancellationOfRemoval,
+        "VDP" => CaseType.VoluntaryDeparture,
+        _ => CaseType.Other
+    };
+
+    using var scope2 = services.CreateScope();
+    var ctx2 = scope2.ServiceProvider.GetRequiredService<AppDbContext>();
+    var batch2 = new List<CourtCase>();
+
+    foreach (var line in File.ReadLines(proceedingFile).Skip(1).Take(testmode ? 10000 : int.MaxValue))
+    {
+        try
+        {
+            var p = line.Replace("\0", "").Split('\t');
+            if (p.Length < 16) { skipped++; continue; }
+
+var idnProceeding = p[0].Trim();
+            var idnCase = p[1].Trim();
+            var baseCityCode = p[4].Trim();
+            var ijCode = p[6].Trim();
+            var decCode = p[15].Trim();
+            var compDateStr = p[21].Trim();
+            var caseType = p[28].Trim();
+            var nat = p[29].Trim();
+            var crimInd = p[33].Trim();
+
+            if (string.IsNullOrWhiteSpace(ijCode) || !judgeCodeToId.ContainsKey(ijCode))
+            {
+                skipped++;
+                continue;
+            }
+
+            if (!courts.TryGetValue(baseCityCode, out var court))
+            {
+                skipped++;
+                continue;
+            }
+
+            var natDisplay = SanitizeString(nationalities.TryGetValue(nat, out var n) ? n : nat) ?? "";
+            var outcome = MapDecCode(string.IsNullOrWhiteSpace(decCode) ? null : decCode);
+            DateTime? compDate = DateTime.TryParse(compDateStr, out var cd) 
+    ? DateTime.SpecifyKind(cd, DateTimeKind.Utc) : null;
+
+            var courtCase = CourtCase.Create(
+    caseNumber: idnProceeding,
+    courtCity: court.City,
+    courtState: court.State,
+    judgeId: judgeCodeToId[ijCode],
+    caseType: MapCaseType(caseType),
+    dataSource: DataSource.TRAC,
+    sourceRecordId: idnCase);
+
+            courtCase.RespondentNationality = SanitizeString(natDisplay.Length > 3
+                ? natDisplay[..3] : natDisplay);
+
+            if (outcome.HasValue && compDate.HasValue)
+                courtCase.UpdateOutcome(outcome.Value, compDate.Value);
+
+            batch2.Add(courtCase);
+
+            if (batch2.Count >= batchSize)
+            {
+                await ctx2.CourtCases.AddRangeAsync(batch2);
+                await ctx2.SaveChangesAsync();
+                imported += batch2.Count;
+                batch2.Clear();
+
+                if (imported % 500000 == 0)
+                    logger.LogInformation("  Progress: {Count:N0} proceedings...", imported);
+            }
+        }
+        catch (Exception ex)
+        {
+            errors++;
+            if (errors <= 3) logger.LogWarning("Row error: {Msg}", ex.Message);
+        }
+    }
+
+    if (batch2.Any())
+    {
+        await ctx2.CourtCases.AddRangeAsync(batch2);
+        await ctx2.SaveChangesAsync();
+        imported += batch2.Count;
+    }
+
+    logger.LogInformation(
+        "EOIR import complete — Judges: {J}, Cases: {C:N0}, Skipped: {S:N0}, Errors: {E:N0}",
+        judgeCodeToId.Count, imported, skipped, errors);
+
+    // ── Step 4: Update judge court locations from imported cases ──────────────
+
+    logger.LogInformation("Updating judge court locations...");
+    using var scope3 = services.CreateScope();
+    var ctx3 = scope3.ServiceProvider.GetRequiredService<AppDbContext>();
+
+    var judgeCourts = await ctx3.CourtCases
+        .GroupBy(c => c.JudgeId)
+        .Select(g => new
+        {
+            JudgeId = g.Key,
+            City = g.Select(c => c.CourtCity)
+                .GroupBy(x => x)
+                .OrderByDescending(x => x.Count())
+                .Select(x => x.Key)
+                .First(),
+            State = g.Select(c => c.CourtState)
+                .GroupBy(x => x)
+                .OrderByDescending(x => x.Count())
+                .Select(x => x.Key)
+                .First()
+        })
+        .ToListAsync();
+
+    var judges = await ctx3.Judges.ToListAsync();
+    foreach (var judge in judges)
+    {
+        var courtInfo = judgeCourts.FirstOrDefault(j => j.JudgeId == judge.Id);
+        if (courtInfo != null)
+            judge.UpdateCourtLocation(courtInfo.City, courtInfo.State);
+    }
+
+    await ctx3.SaveChangesAsync();
+    logger.LogInformation("Judge court locations updated");
+}
+
+#endregion
+
+static string? SanitizeString(string? input)
+{
+    if (input == null) return null;
+    // Remove null bytes and other invalid UTF-8 characters
+    return input.Replace("\0", "").Trim();
+    
+}
