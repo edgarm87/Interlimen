@@ -16,6 +16,7 @@ public interface ICourtCaseRepository : IRepository<CourtCase>
     Task<CourtBacklogSummary> GetBacklogSummaryAsync(string? courtCity = null, string? courtState = null, CancellationToken ct = default);
     Task<IReadOnlyList<CourtCase>> GetPendingByNationalityAsync(string nationality, CancellationToken ct = default);
     Task<(int total, int pending, int decided)> GetCountsByJudgeAsync(Guid judgeId, CancellationToken ct = default);
+    Task<CourtCase?> GetByCaseNumberAsync(string caseNumber, CancellationToken ct = default);
 }
 
 public interface IDetentionFacilityRepository : IRepository<DetentionFacility>

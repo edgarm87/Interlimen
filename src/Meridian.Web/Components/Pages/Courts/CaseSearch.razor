@@ -1,12 +1,215 @@
 @page "/cases"
 @using Microsoft.AspNetCore.Authorization
+@using Meridian.Application.Features.Courts
+@using Meridian.Domain.Entities
+@rendermode @(new InteractiveServerRenderMode(prerender: false))
 @attribute [Authorize]
+@inject IMediator Mediator
 
 <PageTitle>Case Search — Meridian</PageTitle>
+
 <MudText Typo="Typo.h4" Class="mb-1">Case Search</MudText>
-<MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-6">
-    Search individual immigration court cases
+<MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-4">
+    Search 16.1M immigration court proceedings · Source: EOIR FOIA data
 </MudText>
-<MudAlert Severity="Severity.Info">
-    Case search will be available when EOIR case data is imported.
-</MudAlert>
+
+<MudPaper Class="pa-4 mb-4" Elevation="1">
+    <MudGrid>
+        <MudItem xs="12" md="3">
+            <MudText Typo="Typo.caption" Color="Color.Secondary">Court City</MudText>
+            <input type="text"
+                   placeholder="e.g. NEW YORK"
+                   style="width:100%; padding:12px; border:1px solid #ccc; border-radius:4px; font-size:14px; margin-top:4px; box-sizing:border-box"
+                   @oninput="@(e => _filterCity = e.Value?.ToString() ?? "")" />
+        </MudItem>
+        <MudItem xs="12" md="2">
+            <MudText Typo="Typo.caption" Color="Color.Secondary">Case Number</MudText>
+            <input type="text"
+                   placeholder="e.g. 11648668"
+                   style="width:100%; padding:12px; border:1px solid #ccc; border-radius:4px; font-size:14px; margin-top:4px; box-sizing:border-box"
+                   @oninput="@(e => _filterCaseNumber = e.Value?.ToString() ?? "")" />
+        </MudItem>
+        <MudItem xs="12" md="2">
+            <MudText Typo="Typo.caption" Color="Color.Secondary">State</MudText>
+            <input type="text"
+                   placeholder="e.g. NY"
+                   style="width:100%; padding:12px; border:1px solid #ccc; border-radius:4px; font-size:14px; margin-top:4px; box-sizing:border-box"
+                   @oninput="@(e => _filterState = e.Value?.ToString() ?? "")" />
+        </MudItem>
+        <MudItem xs="12" md="2">
+            <MudText Typo="Typo.caption" Color="Color.Secondary">Nationality Code</MudText>
+            <input type="text"
+                   placeholder="e.g. MEX, GT, HO"
+                   style="width:100%; padding:12px; border:1px solid #ccc; border-radius:4px; font-size:14px; margin-top:4px; box-sizing:border-box"
+                   @oninput="@(e => _filterNationality = e.Value?.ToString() ?? "")" />
+        </MudItem>
+        <MudItem xs="12" md="3">
+            <MudText Typo="Typo.caption" Color="Color.Secondary">Outcome</MudText>
+            <select style="width:100%; padding:12px; border:1px solid #ccc; border-radius:4px; font-size:14px; margin-top:4px"
+                    @onchange="@(e => _filterOutcome = e.Value?.ToString() ?? "")">
+                <option value="">All Outcomes</option>
+                <option value="GrantedRelief">Granted Relief</option>
+                <option value="OrderOfRemoval">Order of Removal</option>
+                <option value="VoluntaryDeparture">Voluntary Departure</option>
+                <option value="Terminated">Terminated</option>
+                <option value="Withdrawn">Withdrawn</option>
+            </select>
+        </MudItem>
+        <MudItem xs="12" md="2" Class="d-flex align-end">
+            <MudButton Variant="Variant.Filled"
+                       Color="Color.Primary"
+                       OnClick="Search"
+                       FullWidth="true"
+                       Disabled="_searching"
+                       Class="mt-4">
+                @if (_searching)
+                {
+                    <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2" />
+                }
+                Search
+            </MudButton>
+        </MudItem>
+    </MudGrid>
+</MudPaper>
+
+@if (_searched)
+{
+    <MudCard Elevation="2">
+        <MudCardHeader>
+            <CardHeaderContent>
+                <MudText Typo="Typo.h6">Results</MudText>
+                <MudText Typo="Typo.body2" Color="Color.Secondary">
+                    @_cases.Count.ToString("N0") cases found · showing first 200
+                </MudText>
+            </CardHeaderContent>
+        </MudCardHeader>
+        <MudCardContent>
+            @if (_cases.Any())
+            {
+                <MudTable Items="_cases.Take(200)" Dense="true" Hover="true" Striped="true">
+                    <HeaderContent>
+                        <MudTh>Case #</MudTh>
+                        <MudTh>Court</MudTh>
+                        <MudTh>Nationality</MudTh>
+                        <MudTh>Case Type</MudTh>
+                        <MudTh>Status</MudTh>
+                        <MudTh>Outcome</MudTh>
+                        <MudTh>Decision Date</MudTh>
+                    </HeaderContent>
+                    <RowTemplate>
+                        <MudTd>
+                            <MudText Typo="Typo.body2" Style="font-family:monospace">
+                                @context.CaseNumber
+                            </MudText>
+                        </MudTd>
+                        <MudTd>
+                            <MudText Typo="Typo.body2">@context.CourtCity</MudText>
+                            <MudText Typo="Typo.caption" Color="Color.Secondary">@context.CourtState</MudText>
+                        </MudTd>
+                        <MudTd>@(context.RespondentNationality ?? "—")</MudTd>
+                        <MudTd>@context.CaseType</MudTd>
+                        <MudTd>
+                            <MudChip T="string" Size="Size.Small"
+                                     Color="@GetStatusColor(context.Status)">
+                                @context.Status
+                            </MudChip>
+                        </MudTd>
+                        <MudTd>
+                            @if (context.Outcome.HasValue)
+                            {
+                                <MudChip T="string" Size="Size.Small"
+                                         Color="@GetOutcomeColor(context.Outcome.Value)">
+                                    @GetOutcomeLabel(context.Outcome.Value)
+                                </MudChip>
+                            }
+                            else
+                            {
+                                <MudText Typo="Typo.body2" Color="Color.Secondary">Pending</MudText>
+                            }
+                        </MudTd>
+                        <MudTd>@(context.DecisionDate?.ToString("MM/dd/yyyy") ?? "—")</MudTd>
+                    </RowTemplate>
+                </MudTable>
+            }
+            else
+            {
+                <MudText Typo="Typo.body2" Color="Color.Secondary" Class="pa-4">
+                    No cases found matching your search criteria.
+                </MudText>
+            }
+        </MudCardContent>
+    </MudCard>
+}
+else
+{
+    <MudAlert Severity="Severity.Info">
+        Enter at least one search criteria above and click Search to find cases.
+        Searches are limited to 200 results.
+    </MudAlert>
+}
+
+@code {
+    private bool _searching = false;
+    private bool _searched = false;
+    private string _filterCity = "";
+    private string _filterNationality = "";
+    private string _filterOutcome = "";
+    private string _filterState = "";
+    private string _filterCaseNumber = "";
+    private List<CourtCase> _cases = new();
+
+    private async Task Search()
+    {
+        if (string.IsNullOrWhiteSpace(_filterCity) &&
+            string.IsNullOrWhiteSpace(_filterNationality) &&
+            string.IsNullOrWhiteSpace(_filterCaseNumber))
+            return;
+
+        _searching = true;
+        _searched = true;
+
+        var city = string.IsNullOrWhiteSpace(_filterCity) ? null : _filterCity.Trim().ToUpper();
+        var state = string.IsNullOrWhiteSpace(_filterState) ? null : _filterState.Trim().ToUpper();
+        var nat = string.IsNullOrWhiteSpace(_filterNationality) ? null : _filterNationality.Trim().ToUpper();
+
+        if (!string.IsNullOrWhiteSpace(_filterCaseNumber))
+        {
+            var single = await Mediator.Send(new GetCaseByNumber(_filterCaseNumber));
+            _cases = single != null ? new List<CourtCase> { single } : new List<CourtCase>();
+        }
+        else if (!string.IsNullOrWhiteSpace(city))
+            _cases = (await Mediator.Send(new GetCasesByCourtAndNationality(city, state, nat))).ToList();
+        else if (!string.IsNullOrWhiteSpace(nat))
+            _cases = (await Mediator.Send(new GetPendingByNationality(nat))).ToList();
+        else
+            _cases = new List<CourtCase>();
+
+        _searching = false;
+    }
+
+    private Color GetStatusColor(CaseStatus status) => status switch
+    {
+        CaseStatus.Decided => Color.Success,
+        CaseStatus.Pending => Color.Warning,
+        CaseStatus.Scheduled => Color.Info,
+        _ => Color.Default
+    };
+
+    private Color GetOutcomeColor(CaseOutcome outcome) => outcome switch
+    {
+        CaseOutcome.GrantedRelief => Color.Success,
+        CaseOutcome.OrderOfRemoval => Color.Error,
+        CaseOutcome.VoluntaryDeparture => Color.Warning,
+        _ => Color.Default
+    };
+
+    private string GetOutcomeLabel(CaseOutcome outcome) => outcome switch
+    {
+        CaseOutcome.GrantedRelief => "Granted",
+        CaseOutcome.OrderOfRemoval => "Removal",
+        CaseOutcome.VoluntaryDeparture => "Vol. Departure",
+        CaseOutcome.Terminated => "Terminated",
+        CaseOutcome.Withdrawn => "Withdrawn",
+        _ => "Other"
+    };
+}

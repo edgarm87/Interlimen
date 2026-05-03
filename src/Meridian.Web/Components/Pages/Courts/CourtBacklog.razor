@@ -1,12 +1,160 @@
 @page "/courts/backlog"
 @using Microsoft.AspNetCore.Authorization
+@using Meridian.Application.Features.Courts
+@rendermode @(new InteractiveServerRenderMode(prerender: false))
 @attribute [Authorize]
+@inject IMediator Mediator
 
 <PageTitle>Court Backlog — Meridian</PageTitle>
+
 <MudText Typo="Typo.h4" Class="mb-1">Court Backlog</MudText>
-<MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-6">
-    Pending case counts and average wait times by court
+<MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-4">
+    Pending immigration cases by court · Source: EOIR FOIA data
 </MudText>
-<MudAlert Severity="Severity.Info">
-    Court backlog data will be available when EOIR judge data is imported.
-</MudAlert>
+
+@if (_loading)
+{
+    <MudProgressLinear Indeterminate="true" Color="Color.Primary" Class="mb-4" />
+}
+
+<MudPaper Class="pa-4 mb-4" Elevation="1">
+    <MudGrid>
+        <MudItem xs="12" md="3">
+            <MudText Typo="Typo.caption" Color="Color.Secondary">Court City *</MudText>
+            <input type="text"
+                   placeholder="e.g. NEW YORK"
+                   style="width:100%; padding:12px; border:1px solid #ccc; border-radius:4px; font-size:14px; margin-top:4px; box-sizing:border-box"
+                   @oninput="@(e => _filterCity = e.Value?.ToString() ?? "")" />
+        </MudItem>
+        <MudItem xs="12" md="2">
+            <MudText Typo="Typo.caption" Color="Color.Secondary">State *</MudText>
+            <input type="text"
+                   placeholder="e.g. NY"
+                   style="width:100%; padding:12px; border:1px solid #ccc; border-radius:4px; font-size:14px; margin-top:4px; box-sizing:border-box"
+                   @oninput="@(e => _filterState = e.Value?.ToString() ?? "")" />
+        </MudItem>
+        <MudItem xs="12" md="3">
+            <MudText Typo="Typo.caption" Color="Color.Secondary">Case Type</MudText>
+            <select style="width:100%; padding:12px; border:1px solid #ccc; border-radius:4px; font-size:14px; margin-top:4px"
+                    @onchange="@(e => _filterCaseType = e.Value?.ToString() ?? "")">
+                <option value="">All Types</option>
+                <option value="Removal">Removal</option>
+                <option value="Asylum">Asylum</option>
+                <option value="CancellationOfRemoval">Cancellation of Removal</option>
+                <option value="VoluntaryDeparture">Voluntary Departure</option>
+                <option value="Other">Other</option>
+            </select>
+        </MudItem>
+        <MudItem xs="12" md="2">
+            <MudText Typo="Typo.caption" Color="Color.Secondary">Filed After Year</MudText>
+            <input type="number"
+                   placeholder="e.g. 2020"
+                   min="2000"
+                   max="2026"
+                   style="width:100%; padding:12px; border:1px solid #ccc; border-radius:4px; font-size:14px; margin-top:4px; box-sizing:border-box"
+                   @oninput="@(e => _filterYear = int.TryParse(e.Value?.ToString(), out var y) ? y : (int?)null)" />
+        </MudItem>
+        <MudItem xs="12" md="2" Class="d-flex align-end">
+            <MudButton Variant="Variant.Filled"
+                       Color="Color.Primary"
+                       OnClick="Search"
+                       FullWidth="true"
+                       Disabled="@(string.IsNullOrWhiteSpace(_filterCity) || string.IsNullOrWhiteSpace(_filterState))"
+                       Class="mt-4">
+                Search
+            </MudButton>
+        </MudItem>
+    </MudGrid>
+    <MudText Typo="Typo.caption" Color="Color.Secondary" Class="mt-2">* Both Court City and State are required</MudText>
+</MudPaper>
+
+@if (!_searched)
+{
+    <MudAlert Severity="Severity.Info">
+        Enter a court city or state and click Search to view backlog data.
+    </MudAlert>
+}
+else if (_backlog != null)
+{
+    <MudGrid Class="mb-4">
+        <MudItem xs="12" sm="6" md="3">
+            <MudCard Elevation="2">
+                <MudCardContent Class="pa-4">
+                    <MudText Typo="Typo.body2" Color="Color.Secondary">Court</MudText>
+                    <MudText Typo="Typo.h6" Class="font-weight-bold">@_backlog.CourtCity</MudText>
+                    <MudText Typo="Typo.caption" Color="Color.Secondary">@_backlog.CourtState</MudText>
+                </MudCardContent>
+            </MudCard>
+        </MudItem>
+        <MudItem xs="12" sm="6" md="3">
+            <MudCard Elevation="2">
+                <MudCardContent Class="pa-4">
+                    <MudText Typo="Typo.body2" Color="Color.Secondary">Pending Cases</MudText>
+                    <MudText Typo="Typo.h5" Class="font-weight-bold">@_backlog.TotalPendingCases.ToString("N0")</MudText>
+                    <MudChip T="string" Size="Size.Small" Color="@GetSeverityColor(_backlog.BacklogSeverity)">
+                        @_backlog.BacklogSeverity
+                    </MudChip>
+                </MudCardContent>
+            </MudCard>
+        </MudItem>
+        <MudItem xs="12" sm="6" md="3">
+            <MudCard Elevation="2">
+                <MudCardContent Class="pa-4">
+                    <MudText Typo="Typo.body2" Color="Color.Secondary">Avg Wait Time</MudText>
+                    <MudText Typo="Typo.h5" Class="font-weight-bold">@((_backlog.AverageWaitDays / 365).ToString("F1")) yrs</MudText>
+                    <MudText Typo="Typo.caption" Color="Color.Secondary">@_backlog.AverageWaitDays.ToString("N0") days avg</MudText>
+                </MudCardContent>
+            </MudCard>
+        </MudItem>
+        <MudItem xs="12" sm="6" md="3">
+            <MudCard Elevation="2">
+                <MudCardContent Class="pa-4">
+                    <MudText Typo="Typo.body2" Color="Color.Secondary">Scheduled Next Month</MudText>
+                    <MudText Typo="Typo.h5" Class="font-weight-bold">@_backlog.ScheduledNextMonth.ToString("N0")</MudText>
+                    <MudText Typo="Typo.caption" Color="Color.Secondary">Upcoming hearings</MudText>
+                </MudCardContent>
+            </MudCard>
+        </MudItem>
+    </MudGrid>
+}
+else if (_searched)
+{
+    <MudAlert Severity="Severity.Warning">
+        No backlog data found for that court. Try a different city or state.
+    </MudAlert>
+}
+
+@code {
+    private bool _loading = false;
+    private bool _searched = false;
+    private string _filterCity = "";
+    private string _filterState = "";
+    private string _filterCaseType = "";
+    private int? _filterYear = null;
+    private CourtBacklogDto? _backlog;
+    private List<CourtBacklogDto> _courtBreakdown = new();
+
+    private async Task Search()
+    {
+        if (string.IsNullOrWhiteSpace(_filterCity) || string.IsNullOrWhiteSpace(_filterState))
+            return;
+
+        _loading = true;
+        _searched = true;
+        StateHasChanged();
+
+        var result = await Mediator.Send(new GetCourtBacklog(
+            _filterCity.Trim().ToUpper(),
+            _filterState.Trim().ToUpper()));
+        _backlog = result.FirstOrDefault();
+        _loading = false;
+    }
+
+    private Color GetSeverityColor(string severity) => severity switch
+    {
+        "Critical" => Color.Error,
+        "High" => Color.Warning,
+        "Moderate" => Color.Info,
+        _ => Color.Success
+    };
+}

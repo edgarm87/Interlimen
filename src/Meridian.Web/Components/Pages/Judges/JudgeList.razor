@@ -1,86 +1,222 @@
 @page "/judges"
 @using Microsoft.AspNetCore.Authorization
+@using Meridian.Application.Features.Judges
 @rendermode @(new InteractiveServerRenderMode(prerender: false))
 @attribute [Authorize]
+@inject IMediator Mediator
+@inject NavigationManager Nav
 
 <PageTitle>Judge Analytics — Meridian</PageTitle>
 
 <MudText Typo="Typo.h4" Class="mb-1">Judge Analytics</MudText>
-<MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-6">
-    Grant rates, denial rates, and case volume by immigration judge
+<MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-4">
+    Grant and denial rates by immigration judge · Source: EOIR FOIA data · 16.1M proceedings
 </MudText>
 
-<MudAlert Severity="Severity.Info" Class="mb-6">
-    <MudText Typo="Typo.body2">
-        <strong>Data coming soon.</strong> Judge-level decision data is sourced from the
-        Department of Justice EOIR via FOIA request. Our initial data request is in progress.
-        Expected availability: Q3 2026.
-    </MudText>
-</MudAlert>
-
-<MudGrid Class="mb-6">
-    <MudItem xs="12" md="4">
-        <MudCard Elevation="2">
-            <MudCardContent Class="pa-6 d-flex flex-column align-center">
-                <MudIcon Icon="@Icons.Material.Filled.Gavel"
-                         Color="Color.Primary" Size="Size.Large" Class="mb-3" />
-                <MudText Typo="Typo.h6" Align="Align.Center" Class="mb-2">
-                    Grant Rate by Judge
-                </MudText>
-                <MudText Typo="Typo.body2" Align="Align.Center" Color="Color.Secondary">
-                    See which judges grant asylum and relief at higher rates —
-                    critical intelligence before any hearing.
-                </MudText>
-            </MudCardContent>
-        </MudCard>
-    </MudItem>
-    <MudItem xs="12" md="4">
-        <MudCard Elevation="2">
-            <MudCardContent Class="pa-6 d-flex flex-column align-center">
-                <MudIcon Icon="@Icons.Material.Filled.HourglassEmpty"
-                         Color="Color.Warning" Size="Size.Large" Class="mb-3" />
-                <MudText Typo="Typo.h6" Align="Align.Center" Class="mb-2">
-                    Average Days to Decision
-                </MudText>
-                <MudText Typo="Typo.body2" Align="Align.Center" Color="Color.Secondary">
-                    Plan your caseload around each judge's typical decision timeline.
-                </MudText>
-            </MudCardContent>
-        </MudCard>
-    </MudItem>
-    <MudItem xs="12" md="4">
-        <MudCard Elevation="2">
-            <MudCardContent Class="pa-6 d-flex flex-column align-center">
-                <MudIcon Icon="@Icons.Material.Filled.TrendingUp"
-                         Color="Color.Success" Size="Size.Large" Class="mb-3" />
-                <MudText Typo="Typo.h6" Align="Align.Center" Class="mb-2">
-                    Historical Trends
-                </MudText>
-                <MudText Typo="Typo.body2" Align="Align.Center" Color="Color.Secondary">
-                    Track how a judge's grant rate has shifted over time across case types.
-                </MudText>
-            </MudCardContent>
-        </MudCard>
-    </MudItem>
-</MudGrid>
-
-<MudPaper Class="pa-6" Elevation="1">
-    <MudText Typo="Typo.h6" Class="mb-2">Want early access to judge data?</MudText>
-    <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-4">
-        We're processing a FOIA request with DOJ EOIR for comprehensive judge-level
-        decision data covering FY2012 to present. Enter your email to be notified
-        when this feature goes live.
-    </MudText>
-    <MudGrid>
-        <MudItem xs="12" md="6">
-            <input type="email"
-                   placeholder="your@email.com"
-                   style="width:100%; padding:12px; border:1px solid #ccc; border-radius:4px; font-size:14px; box-sizing:border-box" />
+@if (_loading)
+{
+    <MudProgressLinear Indeterminate="true" Color="Color.Primary" Class="mb-4" />
+    <MudText Typo="Typo.body2" Color="Color.Secondary">Loading judge statistics...</MudText>
+}
+else
+{
+    <!-- Summary KPIs -->
+    <MudGrid Class="mb-4">
+        <MudItem xs="12" sm="6" md="3">
+            <MudCard Elevation="2">
+                <MudCardContent Class="pa-4">
+                    <MudText Typo="Typo.body2" Color="Color.Secondary">Total Judges</MudText>
+                    <MudText Typo="Typo.h5" Class="font-weight-bold">
+                        @_judges.Count.ToString("N0")
+                    </MudText>
+                    <MudText Typo="Typo.caption" Color="Color.Secondary">With decided cases</MudText>
+                </MudCardContent>
+            </MudCard>
         </MudItem>
-        <MudItem xs="12" md="2">
-            <MudButton Variant="Variant.Filled" Color="Color.Primary" FullWidth="true">
-                Notify Me
-            </MudButton>
+        <MudItem xs="12" sm="6" md="3">
+            <MudCard Elevation="2">
+                <MudCardContent Class="pa-4">
+                    <MudText Typo="Typo.body2" Color="Color.Secondary">Avg Grant Rate</MudText>
+                    <MudText Typo="Typo.h5" Class="font-weight-bold" Style="color:#2E7D32">
+                        @(_judges.Any() ? _judges.Average(j => j.GrantRatePercent).ToString("F1") : "—")%
+                    </MudText>
+                    <MudText Typo="Typo.caption" Color="Color.Secondary">Across all judges</MudText>
+                </MudCardContent>
+            </MudCard>
+        </MudItem>
+        <MudItem xs="12" sm="6" md="3">
+            <MudCard Elevation="2">
+                <MudCardContent Class="pa-4">
+                    <MudText Typo="Typo.body2" Color="Color.Secondary">Avg Removal Rate</MudText>
+                    <MudText Typo="Typo.h5" Class="font-weight-bold" Style="color:#D32F2F">
+                        @(_judges.Any() ? _judges.Average(j => j.RemovalOrderRatePercent).ToString("F1") : "—")%
+                    </MudText>
+                    <MudText Typo="Typo.caption" Color="Color.Secondary">Across all judges</MudText>
+                </MudCardContent>
+            </MudCard>
+        </MudItem>
+        <MudItem xs="12" sm="6" md="3">
+            <MudCard Elevation="2">
+                <MudCardContent Class="pa-4">
+                    <MudText Typo="Typo.body2" Color="Color.Secondary">Total Cases</MudText>
+                    <MudText Typo="Typo.h5" Class="font-weight-bold">
+                        @(_judges.Sum(j => j.TotalCasesDecided).ToString("N0"))
+                    </MudText>
+                    <MudText Typo="Typo.caption" Color="Color.Secondary">Decided proceedings</MudText>
+                </MudCardContent>
+            </MudCard>
         </MudItem>
     </MudGrid>
-</MudPaper>
+
+    <!-- Filters -->
+    <MudCard Elevation="2" Class="mb-4">
+        <MudCardContent>
+            <MudGrid>
+                <MudItem xs="12" sm="4">
+                    <MudText Typo="Typo.caption" Color="Color.Secondary">Judge Name</MudText>
+                    <input type="text"
+                           placeholder="Search by last name..."
+                           style="width:100%; padding:12px; border:1px solid #ccc; border-radius:4px; font-size:14px; margin-top:4px; box-sizing:border-box"
+                           @oninput="@(e => { _filterName = e.Value?.ToString() ?? ""; FilterChanged(); })" />
+                </MudItem>
+                <MudItem xs="12" sm="4">
+                    <MudText Typo="Typo.caption" Color="Color.Secondary">Court City</MudText>
+                    <input type="text"
+                           placeholder="e.g. NEW YORK"
+                           style="width:100%; padding:12px; border:1px solid #ccc; border-radius:4px; font-size:14px; margin-top:4px; box-sizing:border-box"
+                           @oninput="@(e => { _filterCity = e.Value?.ToString() ?? ""; FilterChanged(); })" />
+                </MudItem>
+                <MudItem xs="12" sm="4">
+                    <MudText Typo="Typo.caption" Color="Color.Secondary">Sort By</MudText>
+                    <select style="width:100%; padding:12px; border:1px solid #ccc; border-radius:4px; font-size:14px; margin-top:4px"
+                            @onchange="@(e => { _sortBy = e.Value?.ToString() ?? "cases"; FilterChanged(); })">
+                        <option value="cases" selected="@(_sortBy == "cases")">Total Cases</option>
+                        <option value="grant" selected="@(_sortBy == "grant")">Grant Rate</option>
+                        <option value="removal" selected="@(_sortBy == "removal")">Removal Rate</option>
+                        <option value="name" selected="@(_sortBy == "name")">Name</option>
+                    </select>
+                </MudItem>
+            </MudGrid>
+        </MudCardContent>
+    </MudCard>
+
+    <!-- Judge Table -->
+    <MudCard Elevation="2">
+        <MudCardHeader>
+            <CardHeaderContent>
+                <MudText Typo="Typo.h6">Immigration Judges</MudText>
+                <MudText Typo="Typo.body2" Color="Color.Secondary">
+                    @_filtered.Count.ToString("N0") judges · click a row to see case details
+                </MudText>
+            </CardHeaderContent>
+        </MudCardHeader>
+        <MudCardContent>
+            <MudTable Items="_filtered.Take(200)"
+                      Dense="true" Hover="true" Striped="true"
+                      OnRowClick="@((TableRowClickEventArgs<JudgeSummaryDto> args) => NavToJudge(args.Item))">
+                <HeaderContent>
+                    <MudTh>Judge</MudTh>
+                    <MudTh>Court</MudTh>
+                    <MudTh Style="text-align:right">Cases Decided</MudTh>
+                    <MudTh Style="text-align:right">Grant Rate</MudTh>
+                    <MudTh Style="text-align:right">Removal Rate</MudTh>
+                    <MudTh Style="text-align:right">Denial Rate</MudTh>
+                </HeaderContent>
+                <RowTemplate>
+                    <MudTd>
+                        <MudText Typo="Typo.body2" Class="font-weight-medium">
+                            @context.FullName
+                        </MudText>
+                    </MudTd>
+                    <MudTd>
+                        <MudText Typo="Typo.body2">@context.CourtCity</MudText>
+                        <MudText Typo="Typo.caption" Color="Color.Secondary">@context.CourtState</MudText>
+                    </MudTd>
+                    <MudTd Style="text-align:right">
+                        @context.TotalCasesDecided.ToString("N0")
+                    </MudTd>
+                    <MudTd Style="text-align:right">
+                        <MudChip T="string" Size="Size.Small"
+                                 Color="@GetGrantColor(context.GrantRatePercent)">
+                            @context.GrantRatePercent.ToString("F1")%
+                        </MudChip>
+                    </MudTd>
+                    <MudTd Style="text-align:right">
+                        <MudChip T="string" Size="Size.Small"
+                                 Color="@GetRemovalColor(context.RemovalOrderRatePercent)">
+                            @context.RemovalOrderRatePercent.ToString("F1")%
+                        </MudChip>
+                    </MudTd>
+                    <MudTd Style="text-align:right">
+                        @context.DenialRatePercent.ToString("F1")%
+                    </MudTd>
+                </RowTemplate>
+            </MudTable>
+            @if (_filtered.Count > 200)
+            {
+                <MudText Typo="Typo.caption" Color="Color.Secondary" Class="pa-2">
+                    Showing top 200 of @_filtered.Count.ToString("N0") results. Use filters to narrow down.
+                </MudText>
+            }
+        </MudCardContent>
+    </MudCard>
+}
+
+@code {
+    private bool _loading = true;
+    private List<JudgeSummaryDto> _judges = new();
+    private List<JudgeSummaryDto> _filtered = new();
+    private string _filterName = "";
+    private string _filterCity = "";
+    private string _sortBy = "cases";
+
+    protected override async Task OnInitializedAsync()
+    {
+        _loading = true;
+        _judges = await Mediator.Send(new GetAllJudgesWithStats());
+        ApplyFilters();
+        _loading = false;
+    }
+
+    private void FilterChanged() => ApplyFilters();
+
+    private void ApplyFilters()
+    {
+        var q = _judges.AsEnumerable();
+
+        if (!string.IsNullOrWhiteSpace(_filterName))
+            q = q.Where(j => j.FullName.Contains(_filterName, StringComparison.OrdinalIgnoreCase));
+
+        if (!string.IsNullOrWhiteSpace(_filterCity))
+            q = q.Where(j => j.CourtCity.Contains(_filterCity, StringComparison.OrdinalIgnoreCase));
+
+        q = _sortBy switch
+        {
+            "grant" => q.OrderByDescending(j => j.GrantRatePercent),
+            "removal" => q.OrderByDescending(j => j.RemovalOrderRatePercent),
+            "name" => q.OrderBy(j => j.FullName),
+            _ => q.OrderByDescending(j => j.TotalCasesDecided)
+        };
+
+        _filtered = q.ToList();
+    }
+
+    private Color GetGrantColor(decimal rate) => rate switch
+    {
+        >= 30 => Color.Success,
+        >= 15 => Color.Warning,
+        _ => Color.Error
+    };
+
+    private Color GetRemovalColor(decimal rate) => rate switch
+    {
+        >= 80 => Color.Error,
+        >= 60 => Color.Warning,
+        _ => Color.Default
+    };
+    
+    private void NavToJudge(JudgeSummaryDto judge)
+    {
+        Nav.NavigateTo($"/judges/{judge.Id}");
+    }
+}

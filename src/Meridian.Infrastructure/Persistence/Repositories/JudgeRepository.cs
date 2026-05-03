@@ -56,11 +56,18 @@ public class CourtCaseRepository : Repository<CourtCase>, ICourtCaseRepository
         string courtCity,
         string courtState,
         CancellationToken ct = default)
-        => await _dbSet
-            .AsNoTracking()
-            .Where(c => c.CourtCity == courtCity && c.CourtState == courtState)
-            .OrderByDescending(c => c.FilingDate)
+    {
+        var query = _dbSet.AsNoTracking()
+            .Where(c => c.CourtCity == courtCity);
+    
+        if (!string.IsNullOrWhiteSpace(courtState))
+            query = query.Where(c => c.CourtState == courtState);
+    
+        return await query
+            .OrderByDescending(c => c.DecisionDate)
+            .Take(200)
             .ToListAsync(ct);
+    }
 
     public async Task<CourtBacklogSummary> GetBacklogSummaryAsync(
         string? courtCity = null,
@@ -77,25 +84,28 @@ public class CourtCaseRepository : Repository<CourtCase>, ICourtCaseRepository
         if (!string.IsNullOrEmpty(courtState))
             query = query.Where(c => c.CourtState == courtState);
 
-        var cases = await query.ToListAsync(ct);
+        var totalPending = await query.CountAsync(ct);
+
         var now = DateTime.UtcNow;
         var nextMonth = now.AddMonths(1);
 
-        var totalPending = cases.Count;
-        var scheduledNext = cases.Count(c =>
-            c.HearingDate.HasValue && c.HearingDate.Value <= nextMonth);
-        var avgWait = cases
+        var scheduledNext = await query
+            .CountAsync(c => c.HearingDate.HasValue && c.HearingDate.Value <= nextMonth, ct);
+
+        var avgWaitResult = await query
             .Where(c => c.FilingDate.HasValue)
             .Select(c => (now - c.FilingDate!.Value).TotalDays)
             .DefaultIfEmpty(0)
-            .Average();
+            .AverageAsync(ct);
+
+        var avgWait = Math.Round(avgWaitResult, 1);
 
         return new CourtBacklogSummary(
             courtCity ?? "All Courts",
             courtState ?? "All States",
             totalPending,
             scheduledNext,
-            Math.Round(avgWait, 1),
+            avgWait,
             now
         );
     }
@@ -130,4 +140,10 @@ public class CourtCaseRepository : Repository<CourtCase>, ICourtCaseRepository
 
         return counts is null ? (0, 0, 0) : (counts.Total, counts.Pending, counts.Decided);
     }
+    
+    public async Task<CourtCase?> GetByCaseNumberAsync(
+        string caseNumber, CancellationToken ct = default)
+        => await _dbSet
+            .AsNoTracking()
+            .FirstOrDefaultAsync(c => c.CaseNumber == caseNumber, ct);
 }
