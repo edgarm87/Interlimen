@@ -63,7 +63,8 @@ public class GetCourtBacklogHandler : IRequestHandler<GetCourtBacklog, List<Cour
 public record GetCasesByCourtAndNationality(
     string CourtCity,
     string? CourtState = null,
-    string? Nationality = null) : IRequest<List<CourtCase>>;
+    string? Nationality = null,
+    string? Outcome = null) : IRequest<List<CourtCase>>;
 
 public class GetCasesByCourtAndNationalityHandler
     : IRequestHandler<GetCasesByCourtAndNationality, List<CourtCase>>
@@ -74,10 +75,19 @@ public class GetCasesByCourtAndNationalityHandler
     public async Task<List<CourtCase>> Handle(
         GetCasesByCourtAndNationality request, CancellationToken ct)
     {
-        var cases = await _cases.GetByCourtAsync(request.CourtCity, request.CourtState ?? "", ct);
-        if (!string.IsNullOrWhiteSpace(request.Nationality))
-            cases = cases.Where(c => c.RespondentNationality == request.Nationality).ToList();
-        return cases.Take(200).ToList();
+        CaseOutcome? outcome = null;
+        if (!string.IsNullOrWhiteSpace(request.Outcome) &&
+            Enum.TryParse<CaseOutcome>(request.Outcome, out var parsed))
+            outcome = parsed;
+
+        var cases = await _cases.GetByCourtFilteredAsync(
+            request.CourtCity,
+            request.CourtState,
+            request.Nationality,
+            outcome,
+            ct);
+
+        return cases.ToList();
     }
 }
 
@@ -106,4 +116,28 @@ public class GetCaseByNumberHandler : IRequestHandler<GetCaseByNumber, CourtCase
 
     public async Task<CourtCase?> Handle(GetCaseByNumber request, CancellationToken ct)
         => await _cases.GetByCaseNumberAsync(request.CaseNumber.Trim(), ct);
+}
+
+public record GetCasesByJudge(
+    Guid JudgeId,
+    int? FromYear = null,
+    int? ToYear = null,
+    string? SortBy = null) : IRequest<List<CourtCase>>;
+
+public class GetCasesByJudgeHandler : IRequestHandler<GetCasesByJudge, List<CourtCase>>
+{
+    private readonly ICourtCaseRepository _cases;
+    public GetCasesByJudgeHandler(ICourtCaseRepository cases) => _cases = cases;
+
+    public async Task<List<CourtCase>> Handle(GetCasesByJudge request, CancellationToken ct)
+    {
+        var cases = await _cases.GetByJudgeAsync(
+            request.JudgeId,
+            null,
+            ct,
+            request.FromYear,
+            request.ToYear,
+            request.SortBy);
+        return cases.ToList();
+    }
 }

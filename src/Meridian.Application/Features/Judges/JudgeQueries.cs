@@ -19,6 +19,30 @@ public record JudgeSummaryDto(
 );
 
 // ── Queries ───────────────────────────────────────────────────────────────────
+public record GetJudgeById(Guid Id) : IRequest<JudgeSummaryDto?>;
+
+public class GetJudgeByIdHandler : IRequestHandler<GetJudgeById, JudgeSummaryDto?>
+{
+    private readonly IJudgeRepository _judges;
+    public GetJudgeByIdHandler(IJudgeRepository judges) => _judges = judges;
+
+    public async Task<JudgeSummaryDto?> Handle(GetJudgeById request, CancellationToken ct)
+    {
+        var judge = await _judges.GetByIdAsync(request.Id, ct);
+        if (judge == null) return null;
+        return new JudgeSummaryDto(
+            judge.Id,
+            judge.FullName,
+            judge.CourtCity,
+            judge.CourtState,
+            judge.TotalCasesDecided,
+            judge.GrantRatePercent,
+            judge.DenialRatePercent,
+            judge.RemovalOrderRatePercent,
+            judge.AverageDaysToDecision,
+            judge.StatsLastRefreshed);
+    }
+}
 
 public record GetAllJudgesWithStats() : IRequest<List<JudgeSummaryDto>>;
 

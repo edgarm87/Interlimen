@@ -1279,10 +1279,10 @@ static async Task ImportEoirAsync(
     // CaseType mapping
     static CaseType MapCaseType(string? code) => code?.Trim() switch
     {
-        "ASY" => CaseType.Asylum,
-        "RMV" => CaseType.Removal,
-        "CAN" => CaseType.CancellationOfRemoval,
-        "VDP" => CaseType.VoluntaryDeparture,
+        "RMV" or "DEP" => CaseType.Removal,
+        "CFR" or "RFR" => CaseType.Asylum,
+        "WHO" => CaseType.WithholdingOfRemoval,
+        "CSR" => CaseType.CancellationOfRemoval,
         _ => CaseType.Other
     };
 
@@ -1297,7 +1297,7 @@ static async Task ImportEoirAsync(
             var p = line.Replace("\0", "").Split('\t');
             if (p.Length < 16) { skipped++; continue; }
 
-var idnProceeding = p[0].Trim();
+            var idnProceeding = p[0].Trim();
             var idnCase = p[1].Trim();
             var baseCityCode = p[4].Trim();
             var ijCode = p[6].Trim();

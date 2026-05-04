@@ -6,16 +6,18 @@ public interface IJudgeRepository : IRepository<Judge>
 {
     Task<IReadOnlyList<Judge>> GetByCourtAsync(string courtCity, string courtState, CancellationToken ct = default);
     Task<IReadOnlyList<Judge>> GetWithStatsAsync(CancellationToken ct = default);
+    Task<Judge?> GetByIdAsync(Guid id, CancellationToken ct = default);
     Task<Judge?> GetByNameAndCourtAsync(string firstName, string lastName, string courtCity, CancellationToken ct = default);
 }
 
 public interface ICourtCaseRepository : IRepository<CourtCase>
 {
-    Task<IReadOnlyList<CourtCase>> GetByJudgeAsync(Guid judgeId, int? year = null, CancellationToken ct = default);
+    Task<IReadOnlyList<CourtCase>> GetByJudgeAsync(Guid judgeId, int? year = null, CancellationToken ct = default, int? fromYear = null, int? toYear = null, string? sortBy = null);
     Task<IReadOnlyList<CourtCase>> GetByCourtAsync(string courtCity, string courtState, CancellationToken ct = default);
     Task<CourtBacklogSummary> GetBacklogSummaryAsync(string? courtCity = null, string? courtState = null, CancellationToken ct = default);
     Task<IReadOnlyList<CourtCase>> GetPendingByNationalityAsync(string nationality, CancellationToken ct = default);
     Task<(int total, int pending, int decided)> GetCountsByJudgeAsync(Guid judgeId, CancellationToken ct = default);
+    Task<IReadOnlyList<CourtCase>> GetByCourtFilteredAsync(string courtCity, string? courtState = null, string? nationality = null, CaseOutcome? outcome = null, CancellationToken ct = default);
     Task<CourtCase?> GetByCaseNumberAsync(string caseNumber, CancellationToken ct = default);
 }
 

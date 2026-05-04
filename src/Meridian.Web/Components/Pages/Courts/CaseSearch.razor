@@ -15,13 +15,6 @@
 
 <MudPaper Class="pa-4 mb-4" Elevation="1">
     <MudGrid>
-        <MudItem xs="12" md="3">
-            <MudText Typo="Typo.caption" Color="Color.Secondary">Court City</MudText>
-            <input type="text"
-                   placeholder="e.g. NEW YORK"
-                   style="width:100%; padding:12px; border:1px solid #ccc; border-radius:4px; font-size:14px; margin-top:4px; box-sizing:border-box"
-                   @oninput="@(e => _filterCity = e.Value?.ToString() ?? "")" />
-        </MudItem>
         <MudItem xs="12" md="2">
             <MudText Typo="Typo.caption" Color="Color.Secondary">Case Number</MudText>
             <input type="text"
@@ -29,19 +22,26 @@
                    style="width:100%; padding:12px; border:1px solid #ccc; border-radius:4px; font-size:14px; margin-top:4px; box-sizing:border-box"
                    @oninput="@(e => _filterCaseNumber = e.Value?.ToString() ?? "")" />
         </MudItem>
+        <MudItem xs="12" md="3">
+            <MudText Typo="Typo.caption" Color="Color.Secondary">Court City</MudText>
+            <input type="text"
+                   placeholder="e.g. NEW YORK"
+                   style="width:100%; padding:12px; border:1px solid #ccc; border-radius:4px; font-size:14px; margin-top:4px; box-sizing:border-box"
+                   @oninput="@(e => _filterCity = e.Value?.ToString() ?? "")"/>
+        </MudItem>
         <MudItem xs="12" md="2">
             <MudText Typo="Typo.caption" Color="Color.Secondary">State</MudText>
             <input type="text"
                    placeholder="e.g. NY"
                    style="width:100%; padding:12px; border:1px solid #ccc; border-radius:4px; font-size:14px; margin-top:4px; box-sizing:border-box"
-                   @oninput="@(e => _filterState = e.Value?.ToString() ?? "")" />
+                   @oninput="@(e => _filterState = e.Value?.ToString() ?? "")"/>
         </MudItem>
         <MudItem xs="12" md="2">
             <MudText Typo="Typo.caption" Color="Color.Secondary">Nationality Code</MudText>
             <input type="text"
                    placeholder="e.g. MEX, GT, HO"
                    style="width:100%; padding:12px; border:1px solid #ccc; border-radius:4px; font-size:14px; margin-top:4px; box-sizing:border-box"
-                   @oninput="@(e => _filterNationality = e.Value?.ToString() ?? "")" />
+                   @oninput="@(e => _filterNationality = e.Value?.ToString() ?? "")"/>
         </MudItem>
         <MudItem xs="12" md="3">
             <MudText Typo="Typo.caption" Color="Color.Secondary">Outcome</MudText>
@@ -64,7 +64,7 @@
                        Class="mt-4">
                 @if (_searching)
                 {
-                    <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2" />
+                    <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2"/>
                 }
                 Search
             </MudButton>
@@ -178,7 +178,9 @@ else
             _cases = single != null ? new List<CourtCase> { single } : new List<CourtCase>();
         }
         else if (!string.IsNullOrWhiteSpace(city))
-            _cases = (await Mediator.Send(new GetCasesByCourtAndNationality(city, state, nat))).ToList();
+            _cases = (await Mediator.Send(new GetCasesByCourtAndNationality(
+                city, state, nat,
+                string.IsNullOrWhiteSpace(_filterOutcome) ? null : _filterOutcome))).ToList();
         else if (!string.IsNullOrWhiteSpace(nat))
             _cases = (await Mediator.Send(new GetPendingByNationality(nat))).ToList();
         else

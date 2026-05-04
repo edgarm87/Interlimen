@@ -8,6 +8,9 @@ public class JudgeRepository : Repository<Judge>, IJudgeRepository
 {
     public JudgeRepository(AppDbContext context) : base(context) { }
 
+    public async Task<Judge?> GetByIdAsync(Guid id, CancellationToken ct = default)
+        => await _dbSet.AsNoTracking().FirstOrDefaultAsync(j => j.Id == id, ct);
+    
     public async Task<IReadOnlyList<Judge>> GetByCourtAsync(
         string courtCity,
         string courtState,
@@ -44,31 +47,63 @@ public class CourtCaseRepository : Repository<CourtCase>, ICourtCaseRepository
     public async Task<IReadOnlyList<CourtCase>> GetByJudgeAsync(
         Guid judgeId,
         int? year = null,
-        CancellationToken ct = default)
+        CancellationToken ct = default,
+        int? fromYear = null,
+        int? toYear = null,
+        string? sortBy = null)
     {
         var query = _dbSet.AsNoTracking().Where(c => c.JudgeId == judgeId);
+
         if (year.HasValue)
-            query = query.Where(c => c.FilingDate.HasValue && c.FilingDate.Value.Year == year.Value);
-        return await query.OrderByDescending(c => c.FilingDate).ToListAsync(ct);
+            query = query.Where(c => c.DecisionDate.HasValue && c.DecisionDate.Value.Year == year.Value);
+
+        if (fromYear.HasValue)
+            query = query.Where(c => c.DecisionDate.HasValue && c.DecisionDate.Value.Year >= fromYear.Value);
+
+        if (toYear.HasValue)
+            query = query.Where(c => c.DecisionDate.HasValue && c.DecisionDate.Value.Year <= toYear.Value);
+
+        query = sortBy switch
+        {
+            "date_asc" => query.OrderBy(c => c.DecisionDate),
+            "outcome" => query.OrderBy(c => c.Outcome),
+            "nationality" => query.OrderBy(c => c.RespondentNationality),
+            _ => query.OrderByDescending(c => c.DecisionDate)
+        };
+
+        return await query.Take(200).ToListAsync(ct);
     }
 
     public async Task<IReadOnlyList<CourtCase>> GetByCourtAsync(
         string courtCity,
         string courtState,
         CancellationToken ct = default)
+        => await GetByCourtFilteredAsync(courtCity, courtState, null, null, ct);
+
+    public async Task<IReadOnlyList<CourtCase>> GetByCourtFilteredAsync(
+        string courtCity,
+        string? courtState = null,
+        string? nationality = null,
+        CaseOutcome? outcome = null,
+        CancellationToken ct = default)
     {
         var query = _dbSet.AsNoTracking()
             .Where(c => c.CourtCity == courtCity);
-    
+
         if (!string.IsNullOrWhiteSpace(courtState))
             query = query.Where(c => c.CourtState == courtState);
-    
+
+        if (!string.IsNullOrWhiteSpace(nationality))
+            query = query.Where(c => c.RespondentNationality == nationality);
+
+        if (outcome.HasValue)
+            query = query.Where(c => c.Outcome == outcome.Value);
+
         return await query
             .OrderByDescending(c => c.DecisionDate)
             .Take(200)
             .ToListAsync(ct);
     }
-
     public async Task<CourtBacklogSummary> GetBacklogSummaryAsync(
         string? courtCity = null,
         string? courtState = null,
