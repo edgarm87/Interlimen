@@ -20,7 +20,7 @@ public static class InfrastructureServiceRegistration
         AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
         services.AddDbContext<AppDbContext>(options =>
             options.UseNpgsql(
-                configuration.GetConnectionString("DefaultConnection"),
+                connectionString: GetConnectionString(configuration),
                 b => b.MigrationsAssembly(typeof(AppDbContext).Assembly.FullName)
             ));
 
@@ -57,5 +57,18 @@ public static class InfrastructureServiceRegistration
         using var scope = serviceProvider.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
         await db.Database.MigrateAsync();
+    }
+    
+    private static string GetConnectionString(IConfiguration configuration)
+    {
+        var databaseUrl = Environment.GetEnvironmentVariable("DATABASE_URL");
+        if (!string.IsNullOrEmpty(databaseUrl))
+        {
+            // Convert Railway's postgresql://user:pass@host:port/db format to Npgsql format
+            var uri = new Uri(databaseUrl);
+            var userInfo = uri.UserInfo.Split(':');
+            return $"Host={uri.Host};Port={uri.Port};Database={uri.AbsolutePath.TrimStart('/')};Username={userInfo[0]};Password={userInfo[1]};SSL Mode=Require;Trust Server Certificate=true";
+        }
+        return configuration.GetConnectionString("DefaultConnection") ?? "";
     }
 }

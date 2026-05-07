@@ -36,26 +36,24 @@
         <form method="post" action="/auth/login">
             <input type="hidden" name="returnUrl" value="@ReturnUrl" />
             <AntiforgeryToken />
+    
+            <div class="mb-3">
+                <label style="font-size:12px; color:#666; display:block; margin-bottom:4px">Email</label>
+                <input type="email"
+                       name="email"
+                       required
+                       style="width:100%; padding:12px; border:1px solid #ccc; border-radius:4px; font-size:16px; box-sizing:border-box"
+                       placeholder="you@yourfirm.com" />
+            </div>
 
-            <MudTextField @bind-Value="_email"
-                          Label="Email"
-                          InputType="InputType.Email"
-                          Variant="Variant.Outlined"
-                          AdornmentIcon="@Icons.Material.Filled.Email"
-                          Adornment="Adornment.Start"
-                          Class="mb-3" />
-
-            <MudTextField @bind-Value="_password"
-                          Label="Password"
-                          InputType="@_passwordInputType"
-                          Variant="Variant.Outlined"
-                          AdornmentIcon="@_passwordIcon"
-                          Adornment="Adornment.End"
-                          OnAdornmentClick="TogglePassword"
-                          Class="mb-2" />
-
-            <input type="hidden" name="email" value="@_email" />
-            <input type="hidden" name="password" value="@_password" />
+            <div class="mb-4">
+                <label style="font-size:12px; color:#666; display:block; margin-bottom:4px">Password</label>
+                <input type="password"
+                       name="password"
+                       required
+                       style="width:100%; padding:12px; border:1px solid #ccc; border-radius:4px; font-size:16px; box-sizing:border-box"
+                       placeholder="••••••••" />
+            </div>
 
             <div class="d-flex justify-end mb-4">
                 <MudLink Href="/account/forgot-password" Typo="Typo.body2">
@@ -81,22 +79,10 @@
 </MudCard>
 
 @code {
-    private string _email = "";
-    private string _password = "";
-    private bool _showPassword = false;
-
-    private InputType _passwordInputType =>
-        _showPassword ? InputType.Text : InputType.Password;
-    private string _passwordIcon =>
-        _showPassword
-            ? Icons.Material.Filled.VisibilityOff
-            : Icons.Material.Filled.Visibility;
-
+    
     [SupplyParameterFromQuery]
     private string? ReturnUrl { get; set; }
 
     [SupplyParameterFromQuery]
     private string? _error { get; set; }
-
-    private void TogglePassword() => _showPassword = !_showPassword;
 }
