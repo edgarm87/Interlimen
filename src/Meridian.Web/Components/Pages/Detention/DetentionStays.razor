@@ -1,0 +1,298 @@
+@page "/detention/stays"
+@using Microsoft.AspNetCore.Authorization
+@using Meridian.Application.Features.Detention
+@rendermode @(new InteractiveServerRenderMode(prerender: false))
+@attribute [Authorize]
+@inject IMediator Mediator
+
+<PageTitle>Detention Stays — Meridian</PageTitle>
+
+<MudText Typo="Typo.h4" Class="mb-1">Detention Stays</MudText>
+<MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-4">
+    Individual detention records · FY2012–Oct 2025 · Source: ICE ERO via FOIA · 9.15M records
+</MudText>
+
+@if (_loadingSummary)
+{
+    <MudProgressLinear Indeterminate="true" Color="Color.Primary" Class="mb-4" />
+}
+else if (_summary != null)
+{
+    <MudGrid Class="mb-4">
+        <MudItem xs="12" sm="6" md="3">
+            <MudCard Elevation="2">
+                <MudCardContent Class="pa-4">
+                    <MudText Typo="Typo.body2" Color="Color.Secondary">Total Stays</MudText>
+                    <MudText Typo="Typo.h5" Class="font-weight-bold">
+                        @_summary.TotalStays.ToString("N0")
+                    </MudText>
+                    <MudText Typo="Typo.caption" Color="Color.Secondary">FY2012–Oct 2025</MudText>
+                </MudCardContent>
+            </MudCard>
+        </MudItem>
+        <MudItem xs="12" sm="6" md="3">
+            <MudCard Elevation="2">
+                <MudCardContent Class="pa-4">
+                    <MudText Typo="Typo.body2" Color="Color.Secondary">Active Stays</MudText>
+                    <MudText Typo="Typo.h5" Class="font-weight-bold" Style="color:#F57C00">
+                        @_summary.ActiveStays.ToString("N0")
+                    </MudText>
+                    <MudText Typo="Typo.caption" Color="Color.Secondary">No release date</MudText>
+                </MudCardContent>
+            </MudCard>
+        </MudItem>
+        <MudItem xs="12" sm="6" md="3">
+            <MudCard Elevation="2">
+                <MudCardContent Class="pa-4">
+                    <MudText Typo="Typo.body2" Color="Color.Secondary">Avg Length of Stay</MudText>
+                    <MudText Typo="Typo.h5" Class="font-weight-bold">
+                        @_summary.AverageLengthOfStayDays.ToString("N0") days
+                    </MudText>
+                    <MudText Typo="Typo.caption" Color="Color.Secondary">Across all released stays</MudText>
+                </MudCardContent>
+            </MudCard>
+        </MudItem>
+        <MudItem xs="12" sm="6" md="3">
+            <MudCard Elevation="2">
+                <MudCardContent Class="pa-4">
+                    <MudText Typo="Typo.body2" Color="Color.Secondary">Top Release Reason</MudText>
+                    <MudText Typo="Typo.h6" Class="font-weight-bold">
+                        @_summary.TopReleaseReason
+                    </MudText>
+                    <MudText Typo="Typo.caption" Color="Color.Secondary">Most common outcome</MudText>
+                </MudCardContent>
+            </MudCard>
+        </MudItem>
+    </MudGrid>
+}
+
+<!-- Filters -->
+<MudPaper Class="pa-4 mb-4" Elevation="1">
+    <MudGrid>
+        <MudItem xs="12" md="3">
+            <MudText Typo="Typo.caption" Color="Color.Secondary">Facility Name</MudText>
+            <input type="text"
+                   placeholder="e.g. ADELANTO"
+                   style="width:100%; padding:12px; border:1px solid #ccc; border-radius:4px; font-size:14px; margin-top:4px; box-sizing:border-box"
+                   @oninput="@(e => _filterFacility = e.Value?.ToString() ?? "")" />
+        </MudItem>
+        <MudItem xs="12" md="2">
+            <MudText Typo="Typo.caption" Color="Color.Secondary">Nationality</MudText>
+            <input type="text"
+                   placeholder="e.g. MEXICO"
+                   style="width:100%; padding:12px; border:1px solid #ccc; border-radius:4px; font-size:14px; margin-top:4px; box-sizing:border-box"
+                   @oninput="@(e => _filterNationality = e.Value?.ToString() ?? "")" />
+        </MudItem>
+        <MudItem xs="12" md="3">
+            <MudText Typo="Typo.caption" Color="Color.Secondary">Release Reason</MudText>
+            <select style="width:100%; padding:12px; border:1px solid #ccc; border-radius:4px; font-size:14px; margin-top:4px"
+                    @onchange="@(e => _filterReleaseReason = e.Value?.ToString() ?? "")">
+                <option value="">All Reasons</option>
+                <option value="Removed">Removed</option>
+                <option value="Paroled">Paroled</option>
+                <option value="Order of recognizance">Order of recognizance</option>
+                <option value="Paroled - Fear Found">Paroled - Fear Found</option>
+                <option value="Bonded Out - IJ">Bonded Out - IJ</option>
+                <option value="Paroled - Humanitarian">Paroled - Humanitarian</option>
+                <option value="Order of supervision">Order of supervision</option>
+                <option value="Relief Granted by IJ">Relief Granted by IJ</option>
+                <option value="Voluntary departure">Voluntary departure</option>
+                <option value="Proceedings Terminated">Proceedings Terminated</option>
+                <option value="Transferred">Transferred</option>
+            </select>
+        </MudItem>
+        <MudItem xs="12" md="1">
+            <MudText Typo="Typo.caption" Color="Color.Secondary">From Year</MudText>
+            <input type="number" placeholder="2020" min="2012" max="2025"
+                   style="width:100%; padding:12px; border:1px solid #ccc; border-radius:4px; font-size:14px; margin-top:4px; box-sizing:border-box"
+                   @oninput="@(e => _fromYear = int.TryParse(e.Value?.ToString(), out var y) ? y : (int?)null)" />
+        </MudItem>
+        <MudItem xs="12" md="1">
+            <MudText Typo="Typo.caption" Color="Color.Secondary">To Year</MudText>
+            <input type="number" placeholder="2025" min="2012" max="2025"
+                   style="width:100%; padding:12px; border:1px solid #ccc; border-radius:4px; font-size:14px; margin-top:4px; box-sizing:border-box"
+                   @oninput="@(e => _toYear = int.TryParse(e.Value?.ToString(), out var y) ? y : (int?)null)" />
+        </MudItem>
+        <MudItem xs="12" md="1">
+            <MudText Typo="Typo.caption" Color="Color.Secondary">Active Only</MudText>
+            <input type="checkbox"
+                   style="margin-top:16px; width:20px; height:20px"
+                   @onchange="@(e => _activeOnly = (bool?)e.Value)" />
+        </MudItem>
+        <MudItem xs="12" md="1" Class="d-flex align-end">
+            <MudButton Variant="Variant.Filled"
+                       Color="Color.Primary"
+                       OnClick="Search"
+                       FullWidth="true"
+                       Disabled="_searching"
+                       Class="mt-4">
+                Search
+            </MudButton>
+        </MudItem>
+    </MudGrid>
+    <MudText Typo="Typo.caption" Color="Color.Secondary" Class="mt-2">
+        Note: Nationality, criminality and case status are only available for Oct 2022–Oct 2025 records (~693K stays)
+    </MudText>
+</MudPaper>
+
+@if (_searched)
+{
+    <MudCard Elevation="2">
+        <MudCardHeader>
+            <CardHeaderContent>
+                <MudText Typo="Typo.h6">Detention Stay Records</MudText>
+                <MudText Typo="Typo.body2" Color="Color.Secondary">
+                    @if (_result != null)
+                    {
+                        @($"{_result.TotalCount:N0} records · Page {_currentPage} of {TotalPages}")
+                    }
+                </MudText>
+            </CardHeaderContent>
+        </MudCardHeader>
+        <MudCardContent>
+            @if (_searching)
+            {
+                <MudProgressLinear Indeterminate="true" Color="Color.Primary" Class="mb-2" />
+            }
+            else if (_result?.Items.Any() == true)
+            {
+                <MudTable Items="_result.Items" Dense="true" Hover="true" Striped="true">
+                    <HeaderContent>
+                        <MudTh>Facility</MudTh>
+                        <MudTh>Nationality</MudTh>
+                        <MudTh>Criminality</MudTh>
+                        <MudTh>Book In</MudTh>
+                        <MudTh>Book Out</MudTh>
+                        <MudTh>Length</MudTh>
+                        <MudTh>Release Reason</MudTh>
+                    </HeaderContent>
+                    <RowTemplate>
+                        <MudTd>@(context.FacilityName ?? "—")</MudTd>
+                        <MudTd>@(context.CitizenshipCountry ?? "—")</MudTd>
+                        <MudTd>
+                            @if (context.BookInCriminality != null)
+                            {
+                                <MudChip T="string" Size="Size.Small"
+                                         Color="@GetCriminalityColor(context.BookInCriminality)">
+                                    @GetCriminalityLabel(context.BookInCriminality)
+                                </MudChip>
+                            }
+                            else
+                            {
+                                <MudText Typo="Typo.body2" Color="Color.Secondary">—</MudText>
+                            }
+                        </MudTd>
+                        <MudTd>@context.StayBookInDate.ToString("MM/dd/yyyy")</MudTd>
+                        <MudTd>@(context.StayBookOutDate?.ToString("MM/dd/yyyy") ?? "Active")</MudTd>
+                        <MudTd>
+                            @if (context.LengthOfStayDays.HasValue)
+                            {
+                                @($"{context.LengthOfStayDays.Value:N0}d")
+                            }
+                            else
+                            {
+                                <MudText Color="Color.Warning">Ongoing</MudText>
+                            }
+                        </MudTd>
+                        <MudTd>@(context.StayReleaseReason ?? "—")</MudTd>
+                    </RowTemplate>
+                </MudTable>
+
+                <div class="d-flex justify-center mt-4">
+                    <MudPagination Count="TotalPages"
+                                   Selected="_currentPage"
+                                   SelectedChanged="OnPageChanged"
+                                   Color="Color.Primary"
+                                   ShowFirstButton="true"
+                                   ShowLastButton="true" />
+                </div>
+            }
+            else
+            {
+                <MudText Typo="Typo.body2" Color="Color.Secondary" Class="pa-4">
+                    No records found matching your filters.
+                </MudText>
+            }
+        </MudCardContent>
+    </MudCard>
+}
+else
+{
+    <MudAlert Severity="Severity.Info">
+        Use the filters above and click Search to find detention stay records.
+    </MudAlert>
+}
+
+@code {
+    private bool _loadingSummary = true;
+    private bool _searching = false;
+    private bool _searched = false;
+    private DetentionStaySummaryDto? _summary;
+    private PagedDetentionStaysDto? _result;
+    private int _currentPage = 1;
+    private const int PageSize = 50;
+
+    private string _filterFacility = "";
+    private string _filterNationality = "";
+    private string _filterReleaseReason = "";
+    private int? _fromYear;
+    private int? _toYear;
+    private bool? _activeOnly;
+
+    private int TotalPages => _result == null ? 1
+        : (int)Math.Ceiling((double)_result.TotalCount / PageSize);
+
+    protected override async Task OnInitializedAsync()
+    {
+        _summary = await Mediator.Send(new GetDetentionStaySummary());
+        _loadingSummary = false;
+    }
+
+    private async Task Search()
+    {
+        _searching = true;
+        _searched = true;
+        _currentPage = 1;
+        StateHasChanged();
+        await LoadData();
+        _searching = false;
+    }
+
+    private async Task LoadData()
+    {
+        _result = await Mediator.Send(new GetDetentionStays(
+            Page: _currentPage,
+            PageSize: PageSize,
+            FacilityName: string.IsNullOrWhiteSpace(_filterFacility) ? null : _filterFacility.Trim(),
+            Nationality: string.IsNullOrWhiteSpace(_filterNationality) ? null : _filterNationality.Trim().ToUpper(),
+            ReleaseReason: string.IsNullOrWhiteSpace(_filterReleaseReason) ? null : _filterReleaseReason,
+            ActiveOnly: _activeOnly,
+            FromYear: _fromYear,
+            ToYear: _toYear
+        ));
+    }
+
+    private async Task OnPageChanged(int page)
+    {
+        _currentPage = page;
+        _searching = true;
+        StateHasChanged();
+        await LoadData();
+        _searching = false;
+    }
+
+    private Color GetCriminalityColor(string c)
+    {
+        if (c.StartsWith("1 ")) return Color.Error;
+        if (c.StartsWith("2 ")) return Color.Warning;
+        return Color.Default;
+    }
+
+    private string GetCriminalityLabel(string c)
+    {
+        if (c.StartsWith("1 ")) return "Convicted";
+        if (c.StartsWith("2 ")) return "Pending";
+        if (c.StartsWith("3 ")) return c[2..].Trim();
+        return c;
+    }
+}

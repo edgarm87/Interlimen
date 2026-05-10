@@ -1,7 +1,7 @@
 using Meridian.Domain.Entities;
 using Meridian.Domain.Interfaces;
 using Microsoft.EntityFrameworkCore;
-using Meridian.Application.Features.Detention;
+using Microsoft.EntityFrameworkCore.Infrastructure;
 
 namespace Meridian.Infrastructure.Persistence.Repositories;
 
@@ -375,6 +375,109 @@ public class IceDetainerRepository : Repository<IceDetainer>, IIceDetainerReposi
             d.CaseStatus,
             d.DepartedDate,
             d.DepartureCountry
+        )).ToList();
+
+        return (result, total);
+    }
+}
+
+public class DetentionStayRepository : Repository<DetentionStay>, IDetentionStayRepository
+{
+    public DetentionStayRepository(AppDbContext context) : base(context) { }
+
+    public async Task<(int Total, int Active, double AvgDays, string TopReason)> GetSummaryAsync(
+        CancellationToken ct = default)
+    {
+        var total = await _context.DetentionStays.CountAsync(ct);
+
+        var active = await _context.DetentionStays
+            .CountAsync(s => s.StayBookOutDate == null, ct);
+
+        var conn = (Npgsql.NpgsqlConnection)_context.Database.GetDbConnection();
+        await conn.OpenAsync(ct);
+        await using var cmd = conn.CreateCommand();
+        cmd.CommandText = @"SELECT AVG(EXTRACT(EPOCH FROM (""StayBookOutDate"" - ""StayBookInDate"")) / 86400) FROM detention_stays WHERE ""StayBookOutDate"" IS NOT NULL";
+        var result = await cmd.ExecuteScalarAsync(ct);
+        var avgDays = result is DBNull || result == null ? 0.0 : Math.Round(Convert.ToDouble(result), 1);
+        await conn.CloseAsync();
+
+        var topReason = await _context.DetentionStays
+            .Where(s => s.StayReleaseReason != null)
+            .GroupBy(s => s.StayReleaseReason)
+            .Select(g => new { Reason = g.Key!, Count = g.Count() })
+            .OrderByDescending(x => x.Count)
+            .Select(x => x.Reason)
+            .FirstOrDefaultAsync(ct) ?? "N/A";
+
+        return (total, active, Math.Round(avgDays, 1), topReason);
+    }
+
+    public async Task<(List<(Guid Id, Guid FacilityId, string? FacilityName, string? Nationality, string? Gender, int? BirthYear, string? Criminality, string? CaseStatus, string? StayReleaseReason, string? FacilityReleaseReason, DateTime BookInDate, DateTime? BookOutDate)> Items, int Total)> GetPagedAsync(
+        int page, int pageSize, string? facilityName, string? nationality,
+        string? releaseReason, bool? activeOnly, int? fromYear, int? toYear,
+        CancellationToken ct = default)
+    {
+        var query = _context.DetentionStays
+            .AsNoTracking()
+            .Join(_context.DetentionFacilities,
+                s => s.FacilityId,
+                f => f.Id,
+                (s, f) => new { Stay = s, Facility = f });
+
+        if (!string.IsNullOrWhiteSpace(facilityName))
+            query = query.Where(x => x.Facility.Name.Contains(facilityName));
+
+        if (!string.IsNullOrWhiteSpace(nationality))
+            query = query.Where(x => x.Stay.CitizenshipCountry == nationality);
+
+        if (!string.IsNullOrWhiteSpace(releaseReason))
+            query = query.Where(x => x.Stay.StayReleaseReason == releaseReason);
+
+        if (activeOnly == true)
+            query = query.Where(x => x.Stay.StayBookOutDate == null);
+
+        if (fromYear.HasValue)
+            query = query.Where(x => x.Stay.StayBookInDate.Year >= fromYear.Value);
+
+        if (toYear.HasValue)
+            query = query.Where(x => x.Stay.StayBookInDate.Year <= toYear.Value);
+
+        var total = await query.CountAsync(ct);
+
+        var items = await query
+            .OrderByDescending(x => x.Stay.StayBookInDate)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .Select(x => new
+            {
+                x.Stay.Id,
+                x.Stay.FacilityId,
+                FacilityName = x.Facility.Name,
+                x.Stay.CitizenshipCountry,
+                x.Stay.Gender,
+                x.Stay.BirthYear,
+                x.Stay.BookInCriminality,
+                x.Stay.CaseStatus,
+                x.Stay.StayReleaseReason,
+                x.Stay.FacilityReleaseReason,
+                x.Stay.StayBookInDate,
+                x.Stay.StayBookOutDate
+            })
+            .ToListAsync(ct);
+
+        var result = items.Select(x => (
+            x.Id,
+            x.FacilityId,
+            (string?)x.FacilityName,
+            x.CitizenshipCountry,
+            x.Gender,
+            x.BirthYear,
+            x.BookInCriminality,
+            x.CaseStatus,
+            x.StayReleaseReason,
+            x.FacilityReleaseReason,
+            x.StayBookInDate,
+            x.StayBookOutDate
         )).ToList();
 
         return (result, total);

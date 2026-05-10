@@ -73,3 +73,12 @@ public record CourtBacklogSummary(
     double AverageWaitDays,
     DateTime AsOf
 );
+
+public interface IDetentionStayRepository : IRepository<DetentionStay>
+{
+    Task<(int Total, int Active, double AvgDays, string TopReason)> GetSummaryAsync(CancellationToken ct = default);
+    Task<(List<(Guid Id, Guid FacilityId, string? FacilityName, string? Nationality, string? Gender, int? BirthYear, string? Criminality, string? CaseStatus, string? StayReleaseReason, string? FacilityReleaseReason, DateTime BookInDate, DateTime? BookOutDate)> Items, int Total)> GetPagedAsync(
+        int page, int pageSize, string? facilityName, string? nationality,
+        string? releaseReason, bool? activeOnly, int? fromYear, int? toYear,
+        CancellationToken ct = default);
+}
