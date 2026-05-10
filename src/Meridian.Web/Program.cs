@@ -1,5 +1,6 @@
 using Meridian.Application;
 using Meridian.Infrastructure;
+using Meridian.Infrastructure.Persistence;
 using Meridian.Web.Components;
 using Microsoft.AspNetCore.Identity;
 using MudBlazor.Services;

@@ -3,6 +3,7 @@ using Meridian.Infrastructure.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 
+
 namespace Meridian.Infrastructure.Persistence;
 
 // IdentityDbContext<AppUser> — by inheriting from this instead of plain DbContext, we get
