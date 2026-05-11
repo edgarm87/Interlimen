@@ -1,0 +1,462 @@
+@page "/"
+@layout EmptyLayout
+@using Microsoft.AspNetCore.Components
+
+<PageTitle>Meridian — Immigration Intelligence for Attorneys</PageTitle>
+
+<div class="landing">
+
+    <!-- Nav -->
+    <nav class="nav">
+        <div class="nav-inner">
+            <span class="logo">MERIDIAN</span>
+            <a href="/account/login" class="nav-login">Sign In →</a>
+        </div>
+    </nav>
+
+    <!-- Hero -->
+    <section class="hero">
+        <div class="hero-grid"></div>
+        <div class="hero-inner">
+            <div class="eyebrow">30+ million records · FOIA-sourced · Updated quarterly</div>
+            <h1 class="hero-title">
+                Intelligence on<br/>
+                <span class="accent">every ICE action.</span><br/>
+                Every judge.<br/>
+                Every facility.
+            </h1>
+            <p class="hero-sub">
+                Meridian gives immigration attorneys access to the enforcement data 
+                that used to require a FOIA request. Arrest patterns, detention trends, 
+                judge grant rates — all in one platform.
+            </p>
+            <div class="hero-actions">
+                <a href="/account/register" class="btn-primary">Start Free Trial</a>
+                <a href="#data" class="btn-ghost">See the data →</a>
+            </div>
+            <div class="hero-stat-row">
+                <div class="stat">
+                    <span class="stat-num">16.1M</span>
+                    <span class="stat-label">Court proceedings</span>
+                </div>
+                <div class="stat-divider"></div>
+                <div class="stat">
+                    <span class="stat-num">1,327</span>
+                    <span class="stat-label">Immigration judges</span>
+                </div>
+                <div class="stat-divider"></div>
+                <div class="stat">
+                    <span class="stat-num">9.15M</span>
+                    <span class="stat-label">Detention records</span>
+                </div>
+                <div class="stat-divider"></div>
+                <div class="stat">
+                    <span class="stat-num">1M+</span>
+                    <span class="stat-label">Detainer records</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Data section -->
+    <section class="section" id="data">
+        <div class="section-inner">
+            <div class="section-label">WHAT YOU GET</div>
+            <h2 class="section-title">The data your clients' cases depend on.</h2>
+            <div class="features">
+                <div class="feature">
+                    <div class="feature-icon"><span class="material-icons">gavel</span></div>
+                    <h3>Judge Analytics</h3>
+                    <p>Grant rates, denial rates, and removal order rates for every immigration judge in the country. Know what you're walking into before your first hearing.</p>
+                </div>
+                <div class="feature">
+                    <div class="feature-icon"><span class="material-icons">lock</span></div>
+                    <h3>Detention Intelligence</h3>
+                    <p>9.15 million individual detention records. Average length of stay by facility. Active detainer tracking across 1,200+ facilities nationwide.</p>
+                </div>
+                <div class="feature">
+                    <div class="feature-icon"><span class="material-icons">hourglass_empty</span></div>
+                    <h3>Court Backlog</h3>
+                    <p>Real pending case counts at every immigration court. Know how long your client will wait before you file.</p>
+                </div>
+                <div class="feature">
+                    <div class="feature-icon"><span class="material-icons">manage_search</span></div>
+                    <h3>Enforcement Patterns</h3>
+                    <p>1 million+ ICE arrests broken down by field office, apprehension type, and criminality. Understand enforcement intensity in your region.</p>
+                </div>
+                <div class="feature">
+                    <div class="feature-icon"><span class="material-icons">folder_open</span></div>
+                    <h3>Case Search</h3>
+                    <p>Search 16 million EOIR proceedings by court, nationality, judge, and outcome. Find the precedents that matter for your case.</p>
+                </div>
+                <div class="feature">
+                    <div class="feature-icon"><span class="material-icons">show_chart</span></div>
+                    <h3>Removal Trends</h3>
+                    <p>Historical removal data by nationality going back to FY2012. Build the narrative your asylum case needs.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Source section -->
+    <section class="section section-dark">
+        <div class="section-inner">
+            <div class="section-label">DATA INTEGRITY</div>
+            <h2 class="section-title">Government data. No interpretation.</h2>
+            <p class="section-body">
+                Every record in Meridian comes directly from ICE and EOIR via Freedom of Information Act releases. 
+                We process the raw files, build the indexes, and surface the data — but we don't editorialize. 
+                What you see is what the government produced.
+            </p>
+            <div class="sources">
+                <div class="source">
+                    <div class="source-name">ICE ERO</div>
+                    <div class="source-desc">Arrests, detentions, detainers, removals via DDP FOIA</div>
+                </div>
+                <div class="source">
+                    <div class="source-name">EOIR</div>
+                    <div class="source-desc">16.1M court proceedings, 1,327 judges via DOJ FOIA</div>
+                </div>
+                <div class="source">
+                    <div class="source-name">OHSS</div>
+                    <div class="source-desc">Historical removal statistics FY2012–FY2023</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA -->
+    <section class="section section-cta">
+        <div class="section-inner cta-inner">
+            <h2 class="cta-title">Start your free 14-day trial.</h2>
+            <p class="cta-sub">No credit card required. Full access to all data from day one.</p>
+            <a href="/account/register" class="btn-primary btn-large">Create Your Account</a>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="footer-inner">
+            <span class="logo">MERIDIAN</span>
+            <span class="footer-copy">Data sourced from public FOIA releases. Not affiliated with ICE or EOIR.</span>
+            <a href="/account/login" class="footer-link">Sign In</a>
+        </div>
+    </footer>
+
+</div>
+
+<style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    .landing {
+        background: #f4f6f9;
+        color: #1a2332;
+        font-family: 'DM Sans', 'Helvetica Neue', sans-serif;
+        min-height: 100vh;
+        overflow-x: hidden;
+    }
+
+    /* Nav */
+    .nav {
+        position: fixed;
+        top: 0; left: 0; right: 0;
+        z-index: 100;
+        background: rgba(244,246,249,0.92);
+        border-bottom: 1px solid rgba(27,79,114,0.10);
+        backdrop-filter: blur(12px);
+    }
+    .nav-inner {
+        max-width: 1100px;
+        margin: 0 auto;
+        padding: 18px 32px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    .logo {
+        font-family: 'DM Mono', monospace;
+        font-size: 14px;
+        font-weight: 500;
+        letter-spacing: 0.2em;
+        color: #1B4F72;
+    }
+    .nav-login {
+        color: #2E86C1;
+        text-decoration: none;
+        font-size: 14px;
+        transition: color 0.2s;
+    }
+    .nav-login:hover { color: #1B4F72; }
+
+    /* Hero */
+    .hero {
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        position: relative;
+        overflow: hidden;
+        padding-top: 80px;
+        background: #f4f6f9;
+    }
+    .hero-grid {
+        position: absolute;
+        inset: 0;
+        background-image:
+            linear-gradient(rgba(27,79,114,0.05) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(27,79,114,0.05) 1px, transparent 1px);
+        background-size: 60px 60px;
+        mask-image: radial-gradient(ellipse 80% 80% at 50% 50%, black 40%, transparent 100%);
+    }
+    .hero-inner {
+        max-width: 1100px;
+        margin: 0 auto;
+        padding: 80px 32px;
+        position: relative;
+        z-index: 1;
+    }
+    .eyebrow {
+        font-family: 'DM Mono', monospace;
+        font-size: 12px;
+        letter-spacing: 0.15em;
+        color: #2E86C1;
+        text-transform: uppercase;
+        margin-bottom: 28px;
+    }
+    .hero-title {
+        font-size: clamp(42px, 7vw, 88px);
+        font-weight: 700;
+        line-height: 1.05;
+        letter-spacing: -0.03em;
+        color: #1B4F72;
+        margin-bottom: 28px;
+    }
+    .accent { color: #2E86C1; }
+    .hero-sub {
+        font-size: 18px;
+        line-height: 1.7;
+        color: #5a6a7e;
+        max-width: 560px;
+        margin-bottom: 40px;
+    }
+    .hero-actions {
+        display: flex;
+        gap: 16px;
+        flex-wrap: wrap;
+        margin-bottom: 72px;
+    }
+    .btn-primary {
+        display: inline-block;
+        background: #1B4F72;
+        color: #fff;
+        text-decoration: none;
+        padding: 14px 28px;
+        border-radius: 6px;
+        font-size: 15px;
+        font-weight: 600;
+        transition: background 0.2s, transform 0.1s;
+    }
+    .btn-primary:hover { background: #2E86C1; transform: translateY(-1px); }
+    .btn-large { padding: 18px 40px; font-size: 17px; }
+    .btn-ghost {
+        display: inline-block;
+        color: #2E86C1;
+        text-decoration: none;
+        padding: 14px 20px;
+        font-size: 15px;
+        transition: color 0.2s;
+    }
+    .btn-ghost:hover { color: #1B4F72; }
+
+    /* Stats */
+    .hero-stat-row {
+        display: flex;
+        gap: 0;
+        flex-wrap: wrap;
+        border: 1px solid rgba(27,79,114,0.15);
+        border-radius: 8px;
+        overflow: hidden;
+        max-width: 700px;
+    }
+    .stat {
+        flex: 1;
+        min-width: 140px;
+        padding: 20px 24px;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        background: #fff;
+    }
+    .stat-divider {
+        width: 1px;
+        background: rgba(27,79,114,0.12);
+    }
+    .stat-num {
+        font-size: 26px;
+        font-weight: 700;
+        color: #1B4F72;
+        letter-spacing: -0.02em;
+    }
+    .stat-label {
+        font-size: 12px;
+        color: #5a6a7e;
+        letter-spacing: 0.02em;
+    }
+
+    /* Sections */
+    .section { padding: 100px 0; }
+
+    .section-dark {
+        background: #1B4F72;
+    }
+    .section-dark .section-label { color: #7ab8e0; }
+    .section-dark .section-title { color: #fff; }
+    .section-dark .section-body { color: rgba(255,255,255,0.72); }
+    .section-dark .sources {
+        background: rgba(255,255,255,0.06);
+    }
+    .section-dark .source {
+        background: rgba(255,255,255,0.05);
+    }
+    .section-dark .source-name { color: #7ab8e0; }
+    .section-dark .source-desc { color: rgba(255,255,255,0.65); }
+
+    .section-cta {
+        background: linear-gradient(135deg, rgba(27,79,114,0.06) 0%, rgba(244,246,249,0) 60%);
+    }
+
+    .section-inner {
+        max-width: 1100px;
+        margin: 0 auto;
+        padding: 0 32px;
+    }
+    .section-label {
+        font-family: 'DM Mono', monospace;
+        font-size: 11px;
+        letter-spacing: 0.2em;
+        color: #2E86C1;
+        text-transform: uppercase;
+        margin-bottom: 16px;
+    }
+    .section-title {
+        font-size: clamp(32px, 4vw, 48px);
+        font-weight: 700;
+        letter-spacing: -0.02em;
+        color: #1B4F72;
+        margin-bottom: 24px;
+        line-height: 1.1;
+    }
+    .section-body {
+        font-size: 18px;
+        line-height: 1.8;
+        color: #5a6a7e;
+        max-width: 640px;
+        margin-bottom: 48px;
+    }
+
+    /* Features */
+    .features {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 1px;
+        background: rgba(27,79,114,0.10);
+        border: 1px solid rgba(27,79,114,0.12);
+        border-radius: 8px;
+        overflow: hidden;
+        margin-top: 48px;
+    }
+    .feature {
+        padding: 32px;
+        background: #fff;
+        transition: background 0.2s;
+    }
+    .feature:hover { background: #f0f4f8; }
+    .feature-icon { margin-bottom: 16px; }
+    .feature-icon .material-icons {
+        font-size: 32px;
+        color: #2E86C1;
+    }
+    .feature h3 {
+        font-size: 18px;
+        font-weight: 600;
+        color: #1B4F72;
+        margin-bottom: 10px;
+        letter-spacing: -0.01em;
+    }
+    .feature p {
+        font-size: 15px;
+        line-height: 1.7;
+        color: #5a6a7e;
+    }
+
+    /* Sources */
+    .sources {
+        display: flex;
+        gap: 1px;
+        border-radius: 8px;
+        overflow: hidden;
+    }
+    .source {
+        flex: 1;
+        padding: 24px 28px;
+    }
+    .source-name {
+        font-family: 'DM Mono', monospace;
+        font-size: 16px;
+        margin-bottom: 8px;
+        letter-spacing: 0.05em;
+    }
+    .source-desc {
+        font-size: 15px;
+        line-height: 1.5;
+    }
+
+    /* CTA */
+    .cta-inner { text-align: center; }
+    .cta-title {
+        font-size: clamp(28px, 4vw, 48px);
+        font-weight: 700;
+        letter-spacing: -0.02em;
+        color: #1B4F72;
+        margin-bottom: 16px;
+    }
+    .cta-sub {
+        font-size: 17px;
+        color: #5a6a7e;
+        margin-bottom: 40px;
+    }
+
+    /* Footer */
+    .footer {
+        border-top: 1px solid rgba(27,79,114,0.10);
+        padding: 28px 0;
+        background: #f4f6f9;
+    }
+    .footer-inner {
+        max-width: 1100px;
+        margin: 0 auto;
+        padding: 0 32px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 16px;
+        flex-wrap: wrap;
+    }
+    .footer-copy {
+        font-size: 12px;
+        color: #8a9ab0;
+        flex: 1;
+        text-align: center;
+    }
+    .footer-link {
+        font-size: 13px;
+        color: #2E86C1;
+        text-decoration: none;
+    }
+    .footer-link:hover { color: #1B4F72; }
+
+    @@media (max-width: 640px) {
+        .hero-stat-row { flex-direction: column; }
+        .stat-divider { width: 100%; height: 1px; }
+        .sources { flex-direction: column; }
+    }
+</style>

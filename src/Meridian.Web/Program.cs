@@ -54,7 +54,7 @@ app.MapPost("/auth/login", async (HttpContext ctx,
     {
         user.LastLoginAt = DateTime.UtcNow;
         await userManager.UpdateAsync(user);
-        return Results.Redirect(string.IsNullOrEmpty(returnUrl) ? "/" : returnUrl);
+        return Results.Redirect(string.IsNullOrEmpty(returnUrl) ? "/dashboard" : returnUrl);
     }
 
     if (result.IsLockedOut)
