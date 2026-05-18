@@ -1,12 +1,280 @@
 @page "/settings/team"
 @using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Identity
+@using Meridian.Infrastructure.Features.Settings
+@using Meridian.Infrastructure.Identity
+@using System.Security.Claims
+@rendermode @(new InteractiveServerRenderMode(prerender: false))
 @attribute [Authorize]
+@inject IMediator Mediator
+@inject AuthenticationStateProvider AuthStateProvider
+@inject UserManager<AppUser> UserManager
 
 <PageTitle>Team — INTERLIMEN</PageTitle>
+
 <MudText Typo="Typo.h4" Class="mb-1">Team</MudText>
-<MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-6">
+<MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-4">
     Manage seats and user access for your organization
 </MudText>
-<MudAlert Severity="Severity.Info">
-    Team management is coming in the next update.
-</MudAlert>
+
+@if (_loading)
+{
+    <MudProgressLinear Indeterminate="true" Color="Color.Primary" Class="mb-4" />
+}
+else
+{
+    <!-- Seats KPI -->
+    <MudGrid Class="mb-4">
+        <MudItem xs="12" sm="4">
+            <MudCard Elevation="2">
+                <MudCardContent Class="pa-4">
+                    <MudText Typo="Typo.body2" Color="Color.Secondary">Seats Used</MudText>
+                    <MudText Typo="Typo.h5" Class="font-weight-bold">
+                        @_members.Count(m => m.IsActive) / @_maxSeats
+                    </MudText>
+                    <MudText Typo="Typo.caption" Color="Color.Secondary">
+                        @(_maxSeats - _members.Count(m => m.IsActive)) seats available
+                    </MudText>
+                </MudCardContent>
+            </MudCard>
+        </MudItem>
+    </MudGrid>
+
+    <!-- Team Members Table -->
+    <MudCard Elevation="2" Class="mb-4">
+        <MudCardHeader>
+            <CardHeaderContent>
+                <MudText Typo="Typo.h6">Team Members</MudText>
+            </CardHeaderContent>
+            <CardHeaderActions>
+                @if (_canManage && _members.Count(m => m.IsActive) < _maxSeats)
+                {
+                    <MudButton Variant="Variant.Filled"
+                               Color="Color.Primary"
+                               OnClick="@(() => _showInvite = true)"
+                               StartIcon="@Icons.Material.Filled.PersonAdd">
+                        Add Member
+                    </MudButton>
+                }
+            </CardHeaderActions>
+        </MudCardHeader>
+        <MudCardContent>
+            <MudTable Items="_members" Dense="true" Hover="true" Striped="true">
+                <HeaderContent>
+                    <MudTh>Name</MudTh>
+                    <MudTh>Email</MudTh>
+                    <MudTh>Role</MudTh>
+                    <MudTh>Last Login</MudTh>
+                    <MudTh>Status</MudTh>
+                    @if (_canManage)
+                    {
+                        <MudTh></MudTh>
+                    }
+                </HeaderContent>
+                <RowTemplate>
+                    <MudTd>@context.FullName</MudTd>
+                    <MudTd>@context.Email</MudTd>
+                    <MudTd>
+                        <MudChip T="string" Size="Size.Small"
+                                 Color="@GetRoleColor(context.Role)">
+                            @context.Role
+                        </MudChip>
+                    </MudTd>
+                    <MudTd>@(context.LastLoginAt?.ToString("MM/dd/yyyy") ?? "Never")</MudTd>
+                    <MudTd>
+                        <MudChip T="string" Size="Size.Small"
+                                 Color="@(context.IsActive ? Color.Success : Color.Default)">
+                            @(context.IsActive ? "Active" : "Inactive")
+                        </MudChip>
+                    </MudTd>
+                    @if (_canManage)
+                    {
+                        <MudTd>
+                            @if (context.Role != UserRole.Owner && context.Id != _currentUserId)
+                            {
+                                <MudButton Size="Size.Small"
+                                           Variant="Variant.Text"
+                                           Color="@(context.IsActive ? Color.Error : Color.Success)"
+                                           OnClick="@(() => ToggleMember(context))">
+                                    @(context.IsActive ? "Deactivate" : "Reactivate")
+                                </MudButton>
+                            }
+                        </MudTd>
+                    }
+                </RowTemplate>
+            </MudTable>
+        </MudCardContent>
+    </MudCard>
+
+    <!-- Invite Dialog -->
+    @if (_showInvite)
+    {
+        <MudCard Elevation="2">
+            <MudCardHeader>
+                <CardHeaderContent>
+                    <MudText Typo="Typo.h6">Add Team Member</MudText>
+                </CardHeaderContent>
+            </MudCardHeader>
+            <MudCardContent>
+                @if (!string.IsNullOrEmpty(_inviteError))
+                {
+                    <MudAlert Severity="Severity.Error" Class="mb-4">@_inviteError</MudAlert>
+                }
+                @if (_inviteSuccess)
+                {
+                    <MudAlert Severity="Severity.Success" Class="mb-4">Member added successfully.</MudAlert>
+                }
+                <MudGrid>
+                    <MudItem xs="12" sm="6">
+                        <MudTextField @bind-Value="_inviteFirstName"
+                                      Label="First Name"
+                                      Variant="Variant.Outlined"
+                                      Dense="true" />
+                    </MudItem>
+                    <MudItem xs="12" sm="6">
+                        <MudTextField @bind-Value="_inviteLastName"
+                                      Label="Last Name"
+                                      Variant="Variant.Outlined"
+                                      Dense="true" />
+                    </MudItem>
+                    <MudItem xs="12" sm="6">
+                        <MudTextField @bind-Value="_inviteEmail"
+                                      Label="Email"
+                                      InputType="InputType.Email"
+                                      Variant="Variant.Outlined"
+                                      Dense="true" />
+                    </MudItem>
+                    <MudItem xs="12" sm="6">
+                        <MudTextField @bind-Value="_invitePassword"
+                                      Label="Temporary Password"
+                                      InputType="InputType.Password"
+                                      Variant="Variant.Outlined"
+                                      Dense="true" />
+                    </MudItem>
+                    <MudItem xs="12" sm="6">
+                        <MudText Typo="Typo.caption" Color="Color.Secondary">Role</MudText>
+                        <select style="width:100%; padding:12px; border:1px solid #ccc; border-radius:4px; font-size:14px; margin-top:4px"
+                                @onchange="OnRoleChanged">
+                            <option value="Member">Member</option>
+                            <option value="Admin">Admin</option>
+                        </select>
+                    </MudItem>
+                </MudGrid>
+                <div class="d-flex gap-2 mt-4">
+                    <MudButton Variant="Variant.Filled"
+                               Color="Color.Primary"
+                               OnClick="AddMember"
+                               Disabled="_inviting">
+                        @if (_inviting)
+                        {
+                            <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2" />
+                        }
+                        Add Member
+                    </MudButton>
+                    <MudButton Variant="Variant.Text"
+                               OnClick="@(() => { _showInvite = false; _inviteError = ""; _inviteSuccess = false; })">
+                        Cancel
+                    </MudButton>
+                </div>
+            </MudCardContent>
+        </MudCard>
+    }
+}
+
+@code {
+    private bool _loading = true;
+    private bool _canManage = false;
+    private bool _showInvite = false;
+    private bool _inviting = false;
+    private bool _inviteSuccess = false;
+    private string _currentUserId = "";
+    private Guid _tenantId;
+    private int _maxSeats = 1;
+    private List<TeamMemberDto> _members = new();
+
+    private string _inviteFirstName = "";
+    private string _inviteLastName = "";
+    private string _inviteEmail = "";
+    private string _invitePassword = "";
+    private string _inviteError = "";
+    private UserRole _inviteRole = UserRole.Member;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        var user = await UserManager.GetUserAsync(authState.User);
+        if (user == null) return;
+
+        _currentUserId = user.Id;
+        _tenantId = user.TenantId;
+        _canManage = user.Role == UserRole.Owner || user.Role == UserRole.Admin;
+
+        // Get max seats from tenant
+        _maxSeats = user.Role == UserRole.Owner ? await GetMaxSeats() : await GetMaxSeats();
+
+        _members = await Mediator.Send(new GetTeamMembers(_tenantId));
+        _loading = false;
+    }
+    
+    private void OnRoleChanged(ChangeEventArgs e)
+    {
+        if (Enum.TryParse<UserRole>(e.Value?.ToString(), out var role))
+            _inviteRole = role;
+    }
+
+    private async Task<int> GetMaxSeats()
+    {
+        var tenant = await Mediator.Send(new GetTenantInfo(_tenantId));
+        return tenant?.MaxSeats ?? 1;
+    }
+
+    private async Task AddMember()
+    {
+        _inviteError = "";
+        _inviteSuccess = false;
+
+        if (string.IsNullOrWhiteSpace(_inviteFirstName) ||
+            string.IsNullOrWhiteSpace(_inviteLastName) ||
+            string.IsNullOrWhiteSpace(_inviteEmail) ||
+            string.IsNullOrWhiteSpace(_invitePassword))
+        {
+            _inviteError = "Please fill out all fields.";
+            return;
+        }
+
+        _inviting = true;
+        var (success, error) = await Mediator.Send(new InviteTeamMember(
+            _tenantId, _inviteFirstName, _inviteLastName,
+            _inviteEmail, _invitePassword, _inviteRole));
+        _inviting = false;
+
+        if (success)
+        {
+            _inviteSuccess = true;
+            _inviteFirstName = _inviteLastName = _inviteEmail = _invitePassword = "";
+            _members = await Mediator.Send(new GetTeamMembers(_tenantId));
+            await Task.Delay(2000);
+            _showInvite = false;
+            _inviteSuccess = false;
+        }
+        else
+        {
+            _inviteError = error ?? "Failed to add member.";
+        }
+    }
+
+    private async Task ToggleMember(TeamMemberDto member)
+    {
+        var (success, error) = await Mediator.Send(
+            new DeactivateTeamMember(member.Id, _tenantId));
+        if (success)
+            _members = await Mediator.Send(new GetTeamMembers(_tenantId));
+    }
+
+    private Color GetRoleColor(UserRole role) => role switch
+    {
+        UserRole.Owner => Color.Primary,
+        UserRole.Admin => Color.Secondary,
+        _ => Color.Default
+    };
+}

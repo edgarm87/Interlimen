@@ -11,6 +11,8 @@ builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 
 builder.Services.AddApplicationServices();
+builder.Services.AddMediatR(cfg =>
+    cfg.RegisterServicesFromAssemblyContaining<Meridian.Infrastructure.Persistence.AppDbContext>());
 builder.Services.AddInfrastructureServices(builder.Configuration);
 builder.Services.AddMudServices();
 

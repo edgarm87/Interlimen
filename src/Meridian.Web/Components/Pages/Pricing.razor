@@ -131,6 +131,45 @@
                     </div>
                 </div>
             </div>
+            
+            <!-- Enterprise -->
+            <div class="card card-enterprise">
+                <div class="card-header">
+                    <div class="plan-name">Enterprise</div>
+                    <div class="plan-desc">For large firms</div>
+                </div>
+                <div class="card-price">
+                    <span class="price-amount" style="font-size:36px; padding-top:8px;">Custom</span>
+                </div>
+                <div class="price-note">tailored to your firm's needs</div>
+                <a href="mailto:hello@interlimen.com" class="btn-primary btn-enterprise">Contact Us</a>
+                <div class="features-list">
+                    <div class="feature-item">
+                        <span class="material-icons check">check_circle</span>
+                        Unlimited users
+                    </div>
+                    <div class="feature-item">
+                        <span class="material-icons check">check_circle</span>
+                        Everything in Team
+                    </div>
+                    <div class="feature-item">
+                        <span class="material-icons check">check_circle</span>
+                        Dedicated support
+                    </div>
+                    <div class="feature-item">
+                        <span class="material-icons check">check_circle</span>
+                        Custom onboarding
+                    </div>
+                    <div class="feature-item">
+                        <span class="material-icons check">check_circle</span>
+                        SLA guarantee
+                    </div>
+                    <div class="feature-item">
+                        <span class="material-icons check">check_circle</span>
+                        Custom data exports
+                    </div>
+                </div>
+            </div>
 
         </div>
 
@@ -286,10 +325,10 @@
     /* Cards */
     .pricing-cards { padding: 0 32px 80px; }
     .cards-inner {
-        max-width: 800px;
+        max-width: 1100px;
         margin: 0 auto;
         display: grid;
-        grid-template-columns: 1fr 1fr;
+        grid-template-columns: 1fr 1fr 1fr;
         gap: 24px;
         margin-bottom: 64px;
     }
@@ -336,6 +375,7 @@
         align-items: baseline;
         gap: 4px;
         margin-bottom: 4px;
+        min-height: 70px;
     }
     .price-amount {
         font-size: 52px;
@@ -353,6 +393,7 @@
         font-size: 13px;
         color: #8a9ab0;
         margin-bottom: 28px;
+        min-height: 20px;
     }
     .card-featured .price-note { color: rgba(255,255,255,0.5); }
 
@@ -394,6 +435,20 @@
         color: #2E86C1;
     }
     .card-featured .check { color: #7ab8e0; }
+
+    .card-enterprise {
+        border: 2px dashed rgba(27,79,114,0.20);
+        background: rgba(27,79,114,0.02);
+    }
+    .btn-enterprise {
+        background: transparent;
+        color: #1B4F72;
+        border: 2px solid #1B4F72;
+    }
+    .btn-enterprise:hover {
+        background: #1B4F72;
+        color: #fff;
+    }
 
     /* FAQ */
     .faq {
@@ -449,7 +504,7 @@
         text-decoration: none;
     }
 
-    @@media (max-width: 640px) {
+    @@media (max-width: 900px) {
         .cards-inner { grid-template-columns: 1fr; }
         .faq { grid-template-columns: 1fr; }
     }
