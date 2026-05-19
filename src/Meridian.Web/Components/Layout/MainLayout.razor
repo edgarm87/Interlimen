@@ -1,5 +1,13 @@
 @inherits LayoutComponentBase
 @using Microsoft.AspNetCore.Components.Authorization
+@using Microsoft.AspNetCore.Identity
+@using Meridian.Infrastructure.Identity
+@using Meridian.Infrastructure.Persistence
+@using Microsoft.EntityFrameworkCore
+@inject AuthenticationStateProvider AuthStateProvider
+@inject UserManager<AppUser> UserManager
+@inject AppDbContext DbContext
+@inject NavigationManager Nav
 
 <MudThemeProvider Theme="_theme" />
 <MudDialogProvider />
@@ -21,7 +29,6 @@
                 <MudIconButton Icon="@Icons.Material.Filled.AccountCircle"
                                Color="Color.Inherit" />
             </MudAppBar>
-
             <MudDrawer @bind-Open="_drawerOpen"
                        Elevation="2"
                        ClipMode="DrawerClipMode.Always">
@@ -32,11 +39,45 @@
                 </MudDrawerHeader>
                 <NavMenu />
             </MudDrawer>
-
             <MudMainContent>
-                <MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="mt-4 px-4">
-                    @Body
-                </MudContainer>
+                @if (_trialExpired)
+                {
+                    <div style="min-height:100vh; display:flex; align-items:center; justify-content:center; background:#f4f6f9; padding:32px;">
+                        <div style="max-width:480px; width:100%; background:#fff; border-radius:12px; border:1px solid rgba(27,79,114,0.12); padding:48px; text-align:center; box-shadow:0 4px 24px rgba(27,79,114,0.08);">
+                            <div style="width:64px; height:64px; background:#FFF3E0; border-radius:50%; display:flex; align-items:center; justify-content:center; margin:0 auto 24px;">
+                                <span class="material-icons" style="font-size:32px; color:#F57C00;">lock</span>
+                            </div>
+                            <h2 style="font-size:24px; font-weight:700; color:#1B4F72; margin-bottom:12px; letter-spacing:-0.02em;">
+                                @_expiryTitle
+                            </h2>
+                            <p style="font-size:15px; color:#5a6a7e; line-height:1.7; margin-bottom:32px;">
+                                @_expiryMessage Upgrade to continue accessing 30M+ immigration records, judge analytics, and enforcement data.
+                            </p>
+                            <a href="/settings/billing" style="display:block; background:#1B4F72; color:#fff; text-decoration:none; padding:14px 28px; border-radius:8px; font-size:15px; font-weight:600; margin-bottom:12px; transition:background 0.2s;">
+                                Manage Billing
+                            </a>
+                            <a href="/pricing" style="display:block; color:#2E86C1; text-decoration:none; font-size:14px; padding:8px; margin-bottom:4px;">
+                                View pricing plans
+                            </a>
+                            <a href="/account/logout" style="display:block; color:#8a9ab0; text-decoration:none; font-size:14px; padding:8px;">
+                                Sign out
+                            </a>
+                        </div>
+                    </div>
+                }
+                else
+                {
+                    @if (_daysRemaining.HasValue && _daysRemaining.Value <= 3 && _daysRemaining.Value > 0)
+                    {
+                        <MudAlert Severity="Severity.Warning" Class="ma-4" Dense="true">
+                            @_expiryWarning @_daysRemaining.Value day@(_daysRemaining.Value == 1 ? "" : "s").
+                            <MudLink Href="/pricing" Class="ml-2">Upgrade now →</MudLink>
+                        </MudAlert>
+                    }
+                    <MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="mt-4 px-4">
+                        @Body
+                    </MudContainer>
+                }
             </MudMainContent>
         </MudLayout>
     </Authorized>
@@ -47,6 +88,12 @@
 
 @code {
     private bool _drawerOpen = true;
+    private bool _trialExpired = false;
+    private int? _daysRemaining = null;
+    private Meridian.Domain.Entities.SubscriptionStatus? _tenantStatus;
+    private string _expiryMessage = "Your 14-day free trial has expired.";
+    private string _expiryWarning = "Your free trial expires in";
+    private string _expiryTitle = "Your trial has ended";
 
 #pragma warning disable CS0618
     private MudTheme _theme = new MudTheme()
@@ -63,4 +110,38 @@
 #pragma warning restore CS0618
 
     private void ToggleDrawer() => _drawerOpen = !_drawerOpen;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        var appUser = await UserManager.GetUserAsync(authState.User);
+        if (appUser == null) return;
+
+        var tenant = await DbContext.Tenants.FindAsync(appUser.TenantId);
+        if (tenant == null) return;
+        
+        _tenantStatus = tenant.Status;
+        
+        if (tenant.Status != Meridian.Domain.Entities.SubscriptionStatus.Trialing)
+        {
+            _expiryMessage = "Your subscription has expired.";
+            _expiryWarning = "Your subscription expires in";
+            _expiryTitle = "Your subscription has ended";
+        }
+
+        if (tenant.Status == Meridian.Domain.Entities.SubscriptionStatus.Active) return;
+
+        if (tenant.SubscriptionExpiresAt.HasValue)
+        {
+            var daysLeft = (tenant.SubscriptionExpiresAt.Value - DateTime.UtcNow).TotalDays;
+            if (daysLeft <= 0)
+            {
+                var currentPath = Nav.Uri.Replace(Nav.BaseUri, "/");
+                if (!currentPath.StartsWith("/settings/billing") && !currentPath.StartsWith("/account/logout"))
+                    _trialExpired = true;
+            }
+            else
+                _daysRemaining = (int)Math.Ceiling(daysLeft);
+        }
+    }
 }
