@@ -27,7 +27,7 @@
         @if (_success)
         {
             <MudAlert Severity="Severity.Success" Class="mb-4">
-                Account created! You can now sign in.
+                Account created! Please check your email at <strong>@_email</strong> and click the confirmation link to activate your account.
             </MudAlert>
         }
 
@@ -120,8 +120,6 @@
         if (result.IsSuccess)
         {
             _success = true;
-            await Task.Delay(1500);
-            Nav.NavigateTo("/account/login");
         }
         else
         {

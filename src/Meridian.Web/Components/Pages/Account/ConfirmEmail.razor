@@ -1,0 +1,116 @@
+@page "/account/confirm-email"
+@using Meridian.Web.Components.Layout
+@using Microsoft.AspNetCore.Identity
+@using Meridian.Infrastructure.Identity
+@using Microsoft.EntityFrameworkCore
+@using Meridian.Infrastructure.Persistence
+@layout AuthLayout
+@rendermode @(new InteractiveServerRenderMode(prerender: false))
+@inject UserManager<AppUser> UserManager
+@inject NavigationManager Nav
+@inject AppDbContext DbContext
+
+<PageTitle>Confirm Email — INTERLIMEN</PageTitle>
+
+<MudCard Elevation="4" Class="login-card">
+    <MudCardContent>
+        <div class="d-flex justify-center mb-4">
+            @if (_loading)
+            {
+                <MudProgressCircular Indeterminate="true" Color="Color.Primary" />
+            }
+            else if (_success)
+            {
+                <MudIcon Icon="@Icons.Material.Filled.CheckCircle"
+                         Style="color:#2d7a2d; font-size:48px;" />
+            }
+            else
+            {
+                <MudIcon Icon="@Icons.Material.Filled.Error"
+                         Style="color:#c62828; font-size:48px;" />
+            }
+        </div>
+
+        @if (_loading)
+        {
+            <MudText Typo="Typo.h6" Align="Align.Center" Class="mb-2">
+                Confirming your email...
+            </MudText>
+        }
+        else if (_success)
+        {
+            <MudText Typo="Typo.h6" Align="Align.Center" Class="mb-2">
+                Email confirmed!
+            </MudText>
+            <MudText Typo="Typo.body2" Align="Align.Center" Color="Color.Secondary" Class="mb-6">
+                Your account is active. Your 14-day free trial has started.
+            </MudText>
+            <MudButton Variant="Variant.Filled"
+                       Color="Color.Primary"
+                       FullWidth="true"
+                       Href="/account/login">
+                Sign In
+            </MudButton>
+        }
+        else
+        {
+            <MudText Typo="Typo.h6" Align="Align.Center" Class="mb-2">
+                Confirmation failed
+            </MudText>
+            <MudText Typo="Typo.body2" Align="Align.Center" Color="Color.Secondary" Class="mb-6">
+                @_error
+            </MudText>
+            <MudButton Variant="Variant.Filled"
+                       Color="Color.Primary"
+                       FullWidth="true"
+                       Href="/account/register">
+                Try registering again
+            </MudButton>
+        }
+    </MudCardContent>
+</MudCard>
+
+@code {
+    [SupplyParameterFromQuery] private string? userId { get; set; }
+    [SupplyParameterFromQuery] private string? token { get; set; }
+
+    private bool _loading = true;
+    private bool _success = false;
+    private string _error = "This confirmation link is invalid or has expired.";
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (string.IsNullOrEmpty(userId) || string.IsNullOrEmpty(token))
+        {
+            _loading = false;
+            return;
+        }
+
+        var user = await UserManager.FindByIdAsync(userId);
+        if (user == null)
+        {
+            _loading = false;
+            return;
+        }
+
+        var decodedToken = Uri.UnescapeDataString(token);
+        var result = await UserManager.ConfirmEmailAsync(user, decodedToken);
+
+        if (result.Succeeded)
+        {
+            var tenant = await DbContext.Tenants.FindAsync(user.TenantId);
+            if (tenant != null)
+            {
+                tenant.StartTrial(14);
+                await DbContext.SaveChangesAsync();
+            }
+            _success = true;
+        }
+        else
+        {
+            _error = string.Join(", ", result.Errors.Select(e => e.Description));
+        }
+
+        _loading = false;
+    }
+}

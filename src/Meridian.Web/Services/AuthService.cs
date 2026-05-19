@@ -13,17 +13,23 @@ public class AuthService
     private readonly SignInManager<AppUser> _signInManager;
     private readonly IUnitOfWork _uow;
     private readonly ILogger<AuthService> _logger;
+    private readonly EmailService _emailService;
+    private readonly IConfiguration _config;
 
     public AuthService(
         UserManager<AppUser> userManager,
         SignInManager<AppUser> signInManager,
         IUnitOfWork uow,
-        ILogger<AuthService> logger)
+        ILogger<AuthService> logger,
+        EmailService emailService,
+        IConfiguration config)
     {
         _userManager = userManager;
         _signInManager = signInManager;
         _uow = uow;
         _logger = logger;
+        _emailService = emailService;
+        _config = config;
     }
 
     public async Task<Result> LoginAsync(string email, string password)
@@ -78,7 +84,7 @@ public class AuthService
             LastName = lastName,
             TenantId = tenant.Id,
             Role = UserRole.Owner,
-            EmailConfirmed = true  // skip email confirmation for now
+            EmailConfirmed = false
         };
 
         var result = await _userManager.CreateAsync(user, password);
@@ -87,6 +93,14 @@ public class AuthService
             var errors = string.Join("; ", result.Errors.Select(e => e.Description));
             return Result.Failure(errors);
         }
+
+        // Send confirmation email
+        var token = await _userManager.GenerateEmailConfirmationTokenAsync(user);
+        var encodedToken = Uri.EscapeDataString(token);
+        var baseUrl = _config["BaseUrl"] ?? "https://interlimen.com";
+        var confirmationLink = $"{baseUrl}/account/confirm-email?userId={user.Id}&token={encodedToken}";
+
+        await _emailService.SendConfirmationEmailAsync(email, firstName, confirmationLink);
 
         _logger.LogInformation("New tenant {OrgName} registered by {Email}", orgName, email);
         return Result.Success();
@@ -99,8 +113,10 @@ public class AuthService
 
     private static string GenerateSlug(string name)
     {
-        return System.Text.RegularExpressions.Regex
+        var base_slug = System.Text.RegularExpressions.Regex
             .Replace(name.ToLower().Trim(), @"[^a-z0-9]+", "-")
             .Trim('-');
+        var suffix = Guid.NewGuid().ToString("N")[..6];
+        return $"{base_slug}-{suffix}";
     }
 }

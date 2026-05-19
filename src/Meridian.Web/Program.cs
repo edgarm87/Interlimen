@@ -2,8 +2,10 @@ using Meridian.Application;
 using Meridian.Infrastructure;
 using Meridian.Infrastructure.Persistence;
 using Meridian.Web.Components;
+using Meridian.Web.Services;
 using Microsoft.AspNetCore.Identity;
 using MudBlazor.Services;
+using Resend;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -21,6 +23,10 @@ builder.Services.AddAuthentication();
 builder.Services.AddAuthorization();
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<Meridian.Web.Services.AuthService>();
+builder.Services.AddResend(options =>
+    options.ApiToken = builder.Configuration["Resend:ApiKey"] 
+                       ?? Environment.GetEnvironmentVariable("RESEND_API_KEY") ?? "");
+builder.Services.AddScoped<EmailService>();
 
 var app = builder.Build();
 

@@ -128,9 +128,7 @@
             _expiryWarning = "Your subscription expires in";
             _expiryTitle = "Your subscription has ended";
         }
-
-        if (tenant.Status == Meridian.Domain.Entities.SubscriptionStatus.Active) return;
-
+        
         if (tenant.SubscriptionExpiresAt.HasValue)
         {
             var daysLeft = (tenant.SubscriptionExpiresAt.Value - DateTime.UtcNow).TotalDays;
