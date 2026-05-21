@@ -210,7 +210,7 @@ else
         _canManage = user.Role == UserRole.Owner || user.Role == UserRole.Admin;
 
         // Get max seats from tenant
-        _maxSeats = user.Role == UserRole.Owner ? await GetMaxSeats() : await GetMaxSeats();
+        _maxSeats = await GetMaxSeats();
 
         _members = await Mediator.Send(new GetTeamMembers(_tenantId));
         _loading = false;
