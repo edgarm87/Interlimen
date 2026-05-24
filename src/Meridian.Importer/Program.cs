@@ -1009,8 +1009,8 @@ static async Task ImportDetentionAsync(
     for (int row = 2; row <= lastRow; row++)
     {
         var code = sheet.Cell(row, 1).GetValue<string>()?.Trim();
-        var name = sheet.Cell(row, 2).GetValue<string>()?.Trim();
-        var state = sheet.Cell(row, 3).GetValue<string>()?.Trim();
+        var name = sheet.Cell(row, 9).GetValue<string>()?.Trim();
+        var state = "";
 
         if (string.IsNullOrWhiteSpace(code) || facilities.ContainsKey(code)) continue;
 
@@ -1039,8 +1039,8 @@ static async Task ImportDetentionAsync(
     for (int row = 2; row <= lastRow; row++)
     {
         var code = sheet.Cell(row, 1).GetValue<string>()?.Trim();
-        var dateStr = sheet.Cell(row, 4).GetValue<string>()?.Trim();
-        var nDetained = sheet.Cell(row, 5).GetValue<string>()?.Trim();
+        var dateStr = sheet.Cell(row, 2).GetValue<string>()?.Trim();
+        var nDetained = sheet.Cell(row, 3).GetValue<string>()?.Trim();
 
         if (string.IsNullOrWhiteSpace(code) || !facilities.ContainsKey(code))
         {
