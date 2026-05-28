@@ -390,8 +390,9 @@ public class DetentionStayRepository : Repository<DetentionStay>, IDetentionStay
     {
         var total = await _context.DetentionStays.CountAsync(ct);
 
+        var cutoff = new DateTime(2022, 10, 1, 0, 0, 0, DateTimeKind.Utc);
         var active = await _context.DetentionStays
-            .CountAsync(s => s.StayBookOutDate == null, ct);
+            .CountAsync(s => s.StayBookOutDate == null && s.StayBookInDate >= cutoff, ct);
 
         var conn = (Npgsql.NpgsqlConnection)_context.Database.GetDbConnection();
         await conn.OpenAsync(ct);
