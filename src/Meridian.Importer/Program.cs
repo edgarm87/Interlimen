@@ -1171,7 +1171,7 @@ static async Task ImportEoirAsync(
 {
     var eoirPath = Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
-        "Downloads", "EOIR Case Data 2026-0301");
+        "MeridianData/imports/EOIR_April2026", "EOIR Case Data 2026-0501");
 
     var lookupPath = Path.Combine(eoirPath, "Lookup");
     var casePath = Path.Combine(eoirPath, "EOIR Case Data");
