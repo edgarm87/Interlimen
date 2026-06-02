@@ -9,7 +9,7 @@
 
 <MudText Typo="Typo.h4" Class="mb-1">Detention Facilities</MudText>
 <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-4">
-    Active ICE detention facilities — Sep 2023 to Oct 2025 · Source: Deportation Data Project
+    Active ICE detention facilities — Sep 2023 to Mar 2026 · Source: Deportation Data Project
 </MudText>
 
 @if (_loading)
@@ -52,7 +52,9 @@ else
             <MudCard Elevation="2">
                 <MudCardContent Class="pa-4">
                     <MudText Typo="Typo.body2" Color="Color.Secondary">Data Through</MudText>
-                    <MudText Typo="Typo.h5" Class="font-weight-bold">Oct 2025</MudText>
+                    <MudText Typo="Typo.h5" Class="font-weight-bold">
+                        @(_latestSnapshotDate?.ToString("MMM yyyy") ?? "—")
+                    </MudText>
                     <MudText Typo="Typo.caption" Color="Color.Secondary">Deportation Data Project</MudText>
                 </MudCardContent>
             </MudCard>
@@ -119,6 +121,7 @@ else
     private bool _loading = true;
     private List<FacilityPopulationDto> _facilities = new();
     private List<FacilityPopulationDto> _filtered = new();
+    private DateTime? _latestSnapshotDate;
     private int _totalCurrentDetained = 0;
     private string _largestFacility = "";
     private string _searchName = "";
@@ -132,6 +135,9 @@ else
         _largestFacility = _facilities
             .OrderByDescending(f => f.CurrentDetained)
             .FirstOrDefault()?.Name ?? "—";
+        _latestSnapshotDate = _facilities
+            .Where(f => f.CurrentDetained > 0)
+            .Max(f => (DateTime?)f.SnapshotDate);
         FilterData();
         _loading = false;
     }
