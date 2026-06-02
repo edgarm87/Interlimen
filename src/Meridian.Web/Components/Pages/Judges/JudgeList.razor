@@ -10,7 +10,7 @@
 
 <MudText Typo="Typo.h4" Class="mb-1">Judge Analytics</MudText>
 <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-4">
-    Grant and denial rates by immigration judge · Source: EOIR FOIA data · 16.1M proceedings
+    Grant and denial rates by immigration judge · Source: EOIR FOIA data · 12.9M proceedings
 </MudText>
 
 @if (_loading)
@@ -38,7 +38,7 @@ else
                 <MudCardContent Class="pa-4">
                     <MudText Typo="Typo.body2" Color="Color.Secondary">Avg Grant Rate</MudText>
                     <MudText Typo="Typo.h5" Class="font-weight-bold" Style="color:#2E7D32">
-                        @(_judges.Any() ? _judges.Average(j => j.GrantRatePercent).ToString("F1") : "—")%
+                        @(_judges.Any(j => j.TotalCasesDecided > 0) ? _judges.Where(j => j.TotalCasesDecided > 0).Average(j => j.GrantRatePercent).ToString("F1") : "—")%
                     </MudText>
                     <MudText Typo="Typo.caption" Color="Color.Secondary">Across all judges</MudText>
                 </MudCardContent>
@@ -49,7 +49,7 @@ else
                 <MudCardContent Class="pa-4">
                     <MudText Typo="Typo.body2" Color="Color.Secondary">Avg Removal Rate</MudText>
                     <MudText Typo="Typo.h5" Class="font-weight-bold" Style="color:#D32F2F">
-                        @(_judges.Any() ? _judges.Average(j => j.RemovalOrderRatePercent).ToString("F1") : "—")%
+                        @(_judges.Any(j => j.TotalCasesDecided > 0) ? _judges.Where(j => j.TotalCasesDecided > 0).Average(j => j.RemovalOrderRatePercent).ToString("F1") : "—")%
                     </MudText>
                     <MudText Typo="Typo.caption" Color="Color.Secondary">Across all judges</MudText>
                 </MudCardContent>
