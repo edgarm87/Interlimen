@@ -101,6 +101,9 @@ public class AuthService
         var confirmationLink = $"{baseUrl}/account/confirm-email?userId={user.Id}&token={encodedToken}";
 
         await _emailService.SendConfirmationEmailAsync(email, firstName, confirmationLink);
+        
+         // Send "New Signup" email to me
+         await _emailService.SendNewUserNotificationAsync(orgName, firstName, lastName, email);
 
         _logger.LogInformation("New tenant {OrgName} registered by {Email}", orgName, email);
         return Result.Success();

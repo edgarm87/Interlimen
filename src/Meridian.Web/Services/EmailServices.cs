@@ -59,4 +59,53 @@ public class EmailService
             throw;
         }
     }
+    
+    public async Task SendNewUserNotificationAsync(string orgName, string firstName, string lastName, string email)
+{
+    try
+    {
+        var message = new EmailMessage
+        {
+            From = "INTERLIMEN <hello@interlimen.com>",
+            To = { "edgarmora87@gmail.com" },
+            Subject = $"New signup: {firstName} {lastName} — {orgName}",
+            HtmlBody = $"""
+                <div style="font-family:'Helvetica Neue',sans-serif; max-width:520px; margin:0 auto; padding:40px 20px; background:#f4f6f9;">
+                    <div style="background:#fff; border-radius:10px; padding:40px; border:1px solid rgba(27,79,114,0.12);">
+                        <div style="text-align:center; margin-bottom:32px;">
+                            <span style="font-family:monospace; font-size:14px; font-weight:600; letter-spacing:0.2em; color:#1B4F72;">INTERLIMEN</span>
+                        </div>
+                        <h2 style="font-size:22px; font-weight:700; color:#1B4F72; margin-bottom:24px;">
+                            New user signed up
+                        </h2>
+                        <table style="width:100%; font-size:14px; color:#5a6a7e; border-collapse:collapse;">
+                            <tr style="border-bottom:1px solid rgba(27,79,114,0.08)">
+                                <td style="padding:10px 0; font-weight:500; color:#1B4F72; width:140px;">Name</td>
+                                <td style="padding:10px 0">{firstName} {lastName}</td>
+                            </tr>
+                            <tr style="border-bottom:1px solid rgba(27,79,114,0.08)">
+                                <td style="padding:10px 0; font-weight:500; color:#1B4F72;">Organization</td>
+                                <td style="padding:10px 0">{orgName}</td>
+                            </tr>
+                            <tr style="border-bottom:1px solid rgba(27,79,114,0.08)">
+                                <td style="padding:10px 0; font-weight:500; color:#1B4F72;">Email</td>
+                                <td style="padding:10px 0">{email}</td>
+                            </tr>
+                            <tr>
+                                <td style="padding:10px 0; font-weight:500; color:#1B4F72;">Signed up</td>
+                                <td style="padding:10px 0">{DateTime.UtcNow:MMM d, yyyy h:mm tt} UTC</td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+            """
+        };
+
+        await _resend.EmailSendAsync(message);
+    }
+    catch (Exception ex)
+    {
+        _logger.LogError(ex, "Failed to send new user notification for {Email}", email);
+    }
+}
 }
