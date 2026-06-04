@@ -20,48 +20,29 @@ else if (_summary != null)
 {
     <MudGrid Class="mb-4">
         <MudItem xs="12" sm="6" md="3">
-            <MudCard Elevation="2">
-                <MudCardContent Class="pa-4">
-                    <MudText Typo="Typo.body2" Color="Color.Secondary">Total Stays</MudText>
-                    <MudText Typo="Typo.h5" Class="font-weight-bold">
-                        @_summary.TotalStays.ToString("N0")
-                    </MudText>
-                    <MudText Typo="Typo.caption" Color="Color.Secondary">FY2012–Oct 2025</MudText>
-                </MudCardContent>
-            </MudCard>
+            <KpiCard Title="Total Stays"
+                     Value="@_summary.TotalStays.ToString("N0")"
+                     Subtitle="FY2012–Oct 2025"
+                     Tooltip="Total number of individual detention stay records from FY2012 through October 2025, sourced from ICE ERO FOIA data." />
         </MudItem>
         <MudItem xs="12" sm="6" md="3">
-            <MudCard Elevation="2">
-                <MudCardContent Class="pa-4">
-                    <MudText Typo="Typo.body2" Color="Color.Secondary">Active Stays</MudText>
-                    <MudText Typo="Typo.h5" Class="font-weight-bold" Style="color:#F57C00">
-                        @_summary.ActiveStays.ToString("N0")
-                    </MudText>
-                    <MudText Typo="Typo.caption" Color="Color.Secondary">No release date · Oct 2022–present</MudText>
-                </MudCardContent>
-            </MudCard>
+            <KpiCard Title="Active Stays"
+                     Value="@_summary.ActiveStays.ToString("N0")"
+                     Subtitle="No release date · Oct 2022–present"
+                     ValueStyle="color:#F57C00"
+                     Tooltip="Stays with no recorded release date since October 2022 — these individuals may still be in detention or their release was not yet reported." />
         </MudItem>
         <MudItem xs="12" sm="6" md="3">
-            <MudCard Elevation="2">
-                <MudCardContent Class="pa-4">
-                    <MudText Typo="Typo.body2" Color="Color.Secondary">Avg Length of Stay</MudText>
-                    <MudText Typo="Typo.h5" Class="font-weight-bold">
-                        @_summary.AverageLengthOfStayDays.ToString("N0") days
-                    </MudText>
-                    <MudText Typo="Typo.caption" Color="Color.Secondary">Across all released stays</MudText>
-                </MudCardContent>
-            </MudCard>
+            <KpiCard Title="Avg Length of Stay"
+                     Value="@($"{_summary.AverageLengthOfStayDays:N0} days")"
+                     Subtitle="Across all released stays"
+                     Tooltip="Average number of days between detention book-in and release, calculated across all stays with a recorded release date." />
         </MudItem>
         <MudItem xs="12" sm="6" md="3">
-            <MudCard Elevation="2">
-                <MudCardContent Class="pa-4">
-                    <MudText Typo="Typo.body2" Color="Color.Secondary">Top Release Reason</MudText>
-                    <MudText Typo="Typo.h6" Class="font-weight-bold">
-                        @_summary.TopReleaseReason
-                    </MudText>
-                    <MudText Typo="Typo.caption" Color="Color.Secondary">Most common outcome</MudText>
-                </MudCardContent>
-            </MudCard>
+            <KpiCard Title="Top Release Reason"
+                     Value="@_summary.TopReleaseReason"
+                     Subtitle="Most common outcome"
+                     Tooltip="The most frequently recorded reason for release across all completed detention stays." />
         </MudItem>
     </MudGrid>
 }

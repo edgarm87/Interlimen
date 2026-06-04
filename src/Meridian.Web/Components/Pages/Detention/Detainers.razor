@@ -19,48 +19,30 @@ else
 {
     <MudGrid Class="mb-4">
         <MudItem xs="12" sm="6" md="3">
-            <MudCard Elevation="2">
-                <MudCardContent Class="pa-4">
-                    <MudText Typo="Typo.body2" Color="Color.Secondary">Total Detainers</MudText>
-                    <MudText Typo="Typo.h5" Class="font-weight-bold">
-                        @(_summary?.TotalDetainers.ToString("N0") ?? "—")
-                    </MudText>
-                    <MudText Typo="Typo.caption" Color="Color.Secondary">Sep 2023–Oct 2025</MudText>
-                </MudCardContent>
-            </MudCard>
+            <KpiCard Title="Total Detainers"
+                     Value="@(_summary?.TotalDetainers.ToString("N0") ?? "—")"
+                     Subtitle="Sep 2023–Oct 2025"
+                     Tooltip="Total ICE detainer requests lodged with local jails between September 2023 and October 2025, sourced from ICE ERO FOIA data." />
         </MudItem>
         <MudItem xs="12" sm="6" md="3">
-            <MudCard Elevation="2">
-                <MudCardContent Class="pa-4">
-                    <MudText Typo="Typo.body2" Color="Color.Secondary">Active Detainers</MudText>
-                    <MudText Typo="Typo.h5" Class="font-weight-bold" Style="color:#F57C00">
-                        @(_summary?.ActiveDetainers.ToString("N0") ?? "—")
-                    </MudText>
-                    <MudText Typo="Typo.caption" Color="Color.Secondary">No departed date · last 6 months</MudText>
-                </MudCardContent>
-            </MudCard>
+            <KpiCard Title="Active Detainers"
+                     Value="@(_summary?.ActiveDetainers.ToString("N0") ?? "—")"
+                     Subtitle="No departed date · last 6 months"
+                     ValueStyle="color:#F57C00"
+                     Tooltip="Detainers issued in the last 6 months with no recorded departure date — the individual may still be held pending ICE pickup." />
         </MudItem>
         <MudItem xs="12" sm="6" md="3">
-            <MudCard Elevation="2">
-                <MudCardContent Class="pa-4">
-                    <MudText Typo="Typo.body2" Color="Color.Secondary">Resulted in Removal</MudText>
-                    <MudText Typo="Typo.h5" Class="font-weight-bold" Style="color:#D32F2F">
-                        @(_summary?.ResultedInRemoval.ToString("N0") ?? "—")
-                    </MudText>
-                    <MudText Typo="Typo.caption" Color="Color.Secondary">Departed date recorded</MudText>
-                </MudCardContent>
-            </MudCard>
+            <KpiCard Title="Resulted in Removal"
+                     Value="@(_summary?.ResultedInRemoval.ToString("N0") ?? "—")"
+                     Subtitle="Departed date recorded"
+                     ValueStyle="color:#D32F2F"
+                     Tooltip="Detainers where a departure date was recorded, indicating the individual was transferred to ICE and likely removed." />
         </MudItem>
         <MudItem xs="12" sm="6" md="3">
-            <MudCard Elevation="2">
-                <MudCardContent Class="pa-4">
-                    <MudText Typo="Typo.body2" Color="Color.Secondary">Top State</MudText>
-                    <MudText Typo="Typo.h5" Class="font-weight-bold">
-                        @(_summary?.TopState ?? "—")
-                    </MudText>
-                    <MudText Typo="Typo.caption" Color="Color.Secondary">Highest detainer volume</MudText>
-                </MudCardContent>
-            </MudCard>
+            <KpiCard Title="Top State"
+                     Value="@(_summary?.TopState ?? "—")"
+                     Subtitle="Highest detainer volume"
+                     Tooltip="The state where local jails received the most ICE detainer requests in this dataset." />
         </MudItem>
     </MudGrid>
 }

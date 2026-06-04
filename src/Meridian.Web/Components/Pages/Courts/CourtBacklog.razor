@@ -78,18 +78,22 @@ else if (_backlog != null)
 {
     <MudGrid Class="mb-4">
         <MudItem xs="12" sm="6" md="3">
-            <MudCard Elevation="2">
-                <MudCardContent Class="pa-4">
-                    <MudText Typo="Typo.body2" Color="Color.Secondary">Court</MudText>
-                    <MudText Typo="Typo.h6" Class="font-weight-bold">@_backlog.CourtCity</MudText>
-                    <MudText Typo="Typo.caption" Color="Color.Secondary">@_backlog.CourtState</MudText>
-                </MudCardContent>
-            </MudCard>
+            <KpiCard Title="Court"
+                     Value="@_backlog.CourtCity"
+                     Subtitle="@_backlog.CourtState"
+                     Tooltip="The immigration court location matching your search." />
         </MudItem>
         <MudItem xs="12" sm="6" md="3">
             <MudCard Elevation="2">
                 <MudCardContent Class="pa-4">
-                    <MudText Typo="Typo.body2" Color="Color.Secondary">Pending Cases</MudText>
+                    <div class="d-flex align-center gap-1 mb-1">
+                        <MudText Typo="Typo.body2" Color="Color.Secondary">Pending Cases</MudText>
+                        <MudTooltip Text="Total cases with a pending or scheduled status in this court, based on EOIR FOIA data." Placement="Placement.Top" Arrow="true">
+                            <ChildContent>
+                                <MudIcon Icon="@Icons.Material.Outlined.Info" Size="Size.Small" Style="color:#9e9e9e; cursor:help; font-size:14px" />
+                            </ChildContent>
+                        </MudTooltip>
+                    </div>
                     <MudText Typo="Typo.h5" Class="font-weight-bold">@_backlog.TotalPendingCases.ToString("N0")</MudText>
                     <MudChip T="string" Size="Size.Small" Color="@GetSeverityColor(_backlog.BacklogSeverity)">
                         @_backlog.BacklogSeverity
@@ -98,22 +102,16 @@ else if (_backlog != null)
             </MudCard>
         </MudItem>
         <MudItem xs="12" sm="6" md="3">
-            <MudCard Elevation="2">
-                <MudCardContent Class="pa-4">
-                    <MudText Typo="Typo.body2" Color="Color.Secondary">Avg Wait Time</MudText>
-                    <MudText Typo="Typo.h5" Class="font-weight-bold">@((_backlog.AverageWaitDays / 365).ToString("F1")) yrs</MudText>
-                    <MudText Typo="Typo.caption" Color="Color.Secondary">@_backlog.AverageWaitDays.ToString("N0") days avg</MudText>
-                </MudCardContent>
-            </MudCard>
+            <KpiCard Title="Avg Wait Time"
+                     Value="@($"{(_backlog.AverageWaitDays / 365):F1} yrs")"
+                     Subtitle="@($"{_backlog.AverageWaitDays:N0} days avg")"
+                     Tooltip="Average number of days from case filing to the most recent hearing date, across all pending cases in this court." />
         </MudItem>
         <MudItem xs="12" sm="6" md="3">
-            <MudCard Elevation="2">
-                <MudCardContent Class="pa-4">
-                    <MudText Typo="Typo.body2" Color="Color.Secondary">Scheduled Next Month</MudText>
-                    <MudText Typo="Typo.h5" Class="font-weight-bold">@_backlog.ScheduledNextMonth.ToString("N0")</MudText>
-                    <MudText Typo="Typo.caption" Color="Color.Secondary">Upcoming hearings</MudText>
-                </MudCardContent>
-            </MudCard>
+            <KpiCard Title="Scheduled Next Month"
+                     Value="@_backlog.ScheduledNextMonth.ToString("N0")"
+                     Subtitle="Upcoming hearings"
+                     Tooltip="Number of hearings currently scheduled within the next 30 days at this court." />
         </MudItem>
     </MudGrid>
 }

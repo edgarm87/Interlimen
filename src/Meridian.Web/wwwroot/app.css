@@ -49,3 +49,11 @@ h1:focus {
 .darker-border-checkbox.form-check-input {
     border-color: #929292;
 }
+
+.mud-tooltip-root {
+    z-index: 9999 !important;
+}
+
+.mud-popover-open {
+    z-index: 9999 !important;
+}

@@ -23,48 +23,30 @@ else
     <!-- Summary KPIs -->
     <MudGrid Class="mb-4">
         <MudItem xs="12" sm="6" md="3">
-            <MudCard Elevation="2">
-                <MudCardContent Class="pa-4">
-                    <MudText Typo="Typo.body2" Color="Color.Secondary">Total Judges</MudText>
-                    <MudText Typo="Typo.h5" Class="font-weight-bold">
-                        @_judges.Count.ToString("N0")
-                    </MudText>
-                    <MudText Typo="Typo.caption" Color="Color.Secondary">With decided cases</MudText>
-                </MudCardContent>
-            </MudCard>
+            <KpiCard Title="Total Judges"
+                     Value="@_judges.Count.ToString("N0")"
+                     Subtitle="With decided cases"
+                     Tooltip="Number of immigration judges in the EOIR database who have at least one case with a recorded outcome." />
         </MudItem>
         <MudItem xs="12" sm="6" md="3">
-            <MudCard Elevation="2">
-                <MudCardContent Class="pa-4">
-                    <MudText Typo="Typo.body2" Color="Color.Secondary">Avg Grant Rate</MudText>
-                    <MudText Typo="Typo.h5" Class="font-weight-bold" Style="color:#2E7D32">
-                        @(_judges.Any(j => j.TotalCasesDecided > 0) ? _judges.Where(j => j.TotalCasesDecided > 0).Average(j => j.GrantRatePercent).ToString("F1") : "—")%
-                    </MudText>
-                    <MudText Typo="Typo.caption" Color="Color.Secondary">Across all judges</MudText>
-                </MudCardContent>
-            </MudCard>
+            <KpiCard Title="Avg Grant Rate"
+                     Value="@($"{(_judges.Any(j => j.TotalCasesDecided > 0) ? _judges.Where(j => j.TotalCasesDecided > 0).Average(j => j.GrantRatePercent).ToString("F1") : "—")}%")"
+                     Subtitle="Across all judges"
+                     ValueStyle="color:#2E7D32"
+                     Tooltip="Simple average grant rate across all judges with at least one decided case. Not weighted by case volume." />
         </MudItem>
         <MudItem xs="12" sm="6" md="3">
-            <MudCard Elevation="2">
-                <MudCardContent Class="pa-4">
-                    <MudText Typo="Typo.body2" Color="Color.Secondary">Avg Removal Rate</MudText>
-                    <MudText Typo="Typo.h5" Class="font-weight-bold" Style="color:#D32F2F">
-                        @(_judges.Any(j => j.TotalCasesDecided > 0) ? _judges.Where(j => j.TotalCasesDecided > 0).Average(j => j.RemovalOrderRatePercent).ToString("F1") : "—")%
-                    </MudText>
-                    <MudText Typo="Typo.caption" Color="Color.Secondary">Across all judges</MudText>
-                </MudCardContent>
-            </MudCard>
+            <KpiCard Title="Avg Removal Rate"
+                     Value="@($"{(_judges.Any(j => j.TotalCasesDecided > 0) ? _judges.Where(j => j.TotalCasesDecided > 0).Average(j => j.RemovalOrderRatePercent).ToString("F1") : "—")}%")"
+                     Subtitle="Across all judges"
+                     ValueStyle="color:#D32F2F"
+                     Tooltip="Simple average removal order rate across all judges with at least one decided case. Not weighted by case volume." />
         </MudItem>
         <MudItem xs="12" sm="6" md="3">
-            <MudCard Elevation="2">
-                <MudCardContent Class="pa-4">
-                    <MudText Typo="Typo.body2" Color="Color.Secondary">Total Cases</MudText>
-                    <MudText Typo="Typo.h5" Class="font-weight-bold">
-                        @(_judges.Sum(j => j.TotalCasesDecided).ToString("N0"))
-                    </MudText>
-                    <MudText Typo="Typo.caption" Color="Color.Secondary">Decided proceedings</MudText>
-                </MudCardContent>
-            </MudCard>
+            <KpiCard Title="Total Cases"
+                     Value="@(_judges.Sum(j => j.TotalCasesDecided).ToString("N0"))"
+                     Subtitle="Decided proceedings"
+                     Tooltip="Sum of all decided cases across every judge in the dataset, sourced from EOIR FOIA records." />
         </MudItem>
     </MudGrid>
 

@@ -24,56 +24,29 @@ else
     <!-- KPI Row -->
     <MudGrid Class="mb-4">
         <MudItem xs="12" md="3">
-            <MudCard Elevation="2">
-                <MudCardContent Class="pa-4">
-                    <MudText Typo="Typo.body2" Color="Color.Secondary">Total Removals</MudText>
-                    <MudText Typo="Typo.h5" Class="font-weight-bold">
-                        @(_summary?.TotalRemovals.ToString("N0") ?? "—")
-                    </MudText>
-                    <MudText Typo="Typo.caption" Color="Color.Secondary">
-                        FY2012 — FY2023
-                    </MudText>
-                </MudCardContent>
-            </MudCard>
+            <KpiCard Title="Total Removals"
+                     Value="@(_summary?.TotalRemovals.ToString("N0") ?? "—")"
+                     Subtitle="FY2012 — FY2023"
+                     Tooltip="Total confirmed removals (deportations) from FY2012 through FY2023, sourced from ICE ERO FOIA records." />
         </MudItem>
         <MudItem xs="12" md="3">
-            <MudCard Elevation="2">
-                <MudCardContent Class="pa-4">
-                    <MudText Typo="Typo.body2" Color="Color.Secondary">Criminal Arrests</MudText>
-                    <MudText Typo="Typo.h5" Class="font-weight-bold" Style="color:#D32F2F">
-                        @(_summary?.CriminalArrests.ToString("N0") ?? "—")
-                    </MudText>
-                    <MudText Typo="Typo.caption" Color="Color.Secondary">
-                        Based on arrest records · Sep 2023–Oct 2025
-                    </MudText>
-                </MudCardContent>
-            </MudCard>
+            <KpiCard Title="Criminal Arrests"
+                     Value="@(_summary?.CriminalArrests.ToString("N0") ?? "—")"
+                     Subtitle="Based on arrest records · Sep 2023–Oct 2025"
+                     ValueStyle="color:#D32F2F"
+                     Tooltip="ICE arrests where the individual had a prior criminal conviction or pending criminal charge, per ICE ERO records from September 2023 through October 2025." />
         </MudItem>
         <MudItem xs="12" md="3">
-            <MudCard Elevation="2">
-                <MudCardContent Class="pa-4">
-                    <MudText Typo="Typo.body2" Color="Color.Secondary">Top Nationality</MudText>
-                    <MudText Typo="Typo.h5" Class="font-weight-bold">
-                        @(_summary?.TopNationality ?? "—")
-                    </MudText>
-                    <MudText Typo="Typo.caption" Color="Color.Secondary">
-                        Highest volume country
-                    </MudText>
-                </MudCardContent>
-            </MudCard>
+            <KpiCard Title="Top Nationality"
+                     Value="@(_summary?.TopNationality ?? "—")"
+                     Subtitle="Highest volume country"
+                     Tooltip="The nationality (country of birth) with the most enforcement actions recorded across arrests and removals." />
         </MudItem>
         <MudItem xs="12" md="3">
-            <MudCard Elevation="2">
-                <MudCardContent Class="pa-4">
-                    <MudText Typo="Typo.body2" Color="Color.Secondary">Top Field Office</MudText>
-                    <MudText Typo="Typo.h5" Class="font-weight-bold">
-                        @(_summary?.TopAOR ?? "—")
-                    </MudText>
-                    <MudText Typo="Typo.caption" Color="Color.Secondary">
-                        Highest arrest volume AOR
-                    </MudText>
-                </MudCardContent>
-            </MudCard>
+            <KpiCard Title="Top Field Office"
+                     Value="@(_summary?.TopAOR ?? "—")"
+                     Subtitle="Highest arrest volume AOR"
+                     Tooltip="The ICE Area of Responsibility (AOR) field office that recorded the highest number of arrests in this dataset." />
         </MudItem>
     </MudGrid>
 

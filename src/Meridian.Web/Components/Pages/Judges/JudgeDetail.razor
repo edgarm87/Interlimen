@@ -34,50 +34,30 @@ else
     <!-- Stats KPIs -->
     <MudGrid Class="mb-4">
         <MudItem xs="12" sm="6" md="3">
-            <MudCard Elevation="2">
-                <MudCardContent Class="pa-4">
-                    <MudText Typo="Typo.body2" Color="Color.Secondary">Cases Decided</MudText>
-                    <MudText Typo="Typo.h5" Class="font-weight-bold">
-                        @_judge.TotalCasesDecided.ToString("N0")
-                    </MudText>
-                    <MudText Typo="Typo.caption" Color="Color.Secondary">Total proceedings</MudText>
-                </MudCardContent>
-            </MudCard>
+            <KpiCard Title="Cases Decided"
+                     Value="@_judge.TotalCasesDecided.ToString("N0")"
+                     Subtitle="Total proceedings"
+                     Tooltip="Total number of immigration cases with a recorded outcome decided by this judge." />
         </MudItem>
         <MudItem xs="12" sm="6" md="3">
-            <MudCard Elevation="2">
-                <MudCardContent Class="pa-4">
-                    <MudText Typo="Typo.body2" Color="Color.Secondary">Grant Rate</MudText>
-                    <MudText Typo="Typo.h5" Class="font-weight-bold"
-                             Style="@($"color:{GetRateColor(_judge.GrantRatePercent, true)}")">
-                        @_judge.GrantRatePercent.ToString("F1")%
-                    </MudText>
-                    <MudText Typo="Typo.caption" Color="Color.Secondary">Relief granted</MudText>
-                </MudCardContent>
-            </MudCard>
+            <KpiCard Title="Grant Rate"
+                     Value="@($"{_judge.GrantRatePercent:F1}%")"
+                     Subtitle="Relief granted"
+                     ValueStyle="@($"color:{GetRateColor(_judge.GrantRatePercent, true)}")"
+                     Tooltip="Percentage of decided cases where the judge granted some form of relief (asylum, withholding, etc.)." />
         </MudItem>
         <MudItem xs="12" sm="6" md="3">
-            <MudCard Elevation="2">
-                <MudCardContent Class="pa-4">
-                    <MudText Typo="Typo.body2" Color="Color.Secondary">Removal Rate</MudText>
-                    <MudText Typo="Typo.h5" Class="font-weight-bold"
-                             Style="@($"color:{GetRateColor(_judge.RemovalOrderRatePercent, false)}")">
-                        @_judge.RemovalOrderRatePercent.ToString("F1")%
-                    </MudText>
-                    <MudText Typo="Typo.caption" Color="Color.Secondary">Orders of removal</MudText>
-                </MudCardContent>
-            </MudCard>
+            <KpiCard Title="Removal Rate"
+                     Value="@($"{_judge.RemovalOrderRatePercent:F1}%")"
+                     Subtitle="Orders of removal"
+                     ValueStyle="@($"color:{GetRateColor(_judge.RemovalOrderRatePercent, false)}")"
+                     Tooltip="Percentage of decided cases that resulted in an order of removal (deportation order)." />
         </MudItem>
         <MudItem xs="12" sm="6" md="3">
-            <MudCard Elevation="2">
-                <MudCardContent Class="pa-4">
-                    <MudText Typo="Typo.body2" Color="Color.Secondary">Denial Rate</MudText>
-                    <MudText Typo="Typo.h5" Class="font-weight-bold">
-                        @_judge.DenialRatePercent.ToString("F1")%
-                    </MudText>
-                    <MudText Typo="Typo.caption" Color="Color.Secondary">Relief denied</MudText>
-                </MudCardContent>
-            </MudCard>
+            <KpiCard Title="Denial Rate"
+                     Value="@($"{_judge.DenialRatePercent:F1}%")"
+                     Subtitle="Relief denied"
+                     Tooltip="Percentage of decided cases where the judge denied relief but did not issue a removal order (e.g., voluntary departure)." />
         </MudItem>
     </MudGrid>
 

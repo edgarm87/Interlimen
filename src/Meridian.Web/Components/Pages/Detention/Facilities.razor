@@ -20,44 +20,28 @@ else
 {
     <MudGrid Class="mb-4">
         <MudItem xs="12" md="3">
-            <MudCard Elevation="2">
-                <MudCardContent Class="pa-4">
-                    <MudText Typo="Typo.body2" Color="Color.Secondary">Total Facilities</MudText>
-                    <MudText Typo="Typo.h5" Class="font-weight-bold">@_facilities.Count</MudText>
-                    <MudText Typo="Typo.caption" Color="Color.Secondary">Across 55 states/territories</MudText>
-                </MudCardContent>
-            </MudCard>
+            <KpiCard Title="Total Facilities"
+                     Value="@_facilities.Count.ToString()"
+                     Subtitle="Across 55 states/territories"
+                     Tooltip="Number of ICE detention facilities with at least one population snapshot recorded between September 2023 and March 2026." />
         </MudItem>
         <MudItem xs="12" md="3">
-            <MudCard Elevation="2">
-                <MudCardContent Class="pa-4">
-                    <MudText Typo="Typo.body2" Color="Color.Secondary">Currently Detained</MudText>
-                    <MudText Typo="Typo.h5" Class="font-weight-bold">
-                        @_totalCurrentDetained.ToString("N0")
-                    </MudText>
-                    <MudText Typo="Typo.caption" Color="Color.Secondary">Latest snapshot</MudText>
-                </MudCardContent>
-            </MudCard>
+            <KpiCard Title="Currently Detained"
+                     Value="@_totalCurrentDetained.ToString("N0")"
+                     Subtitle="Latest snapshot"
+                     Tooltip="Total individuals detained across all facilities as of the most recent population snapshot date." />
         </MudItem>
         <MudItem xs="12" md="3">
-            <MudCard Elevation="2">
-                <MudCardContent Class="pa-4">
-                    <MudText Typo="Typo.body2" Color="Color.Secondary">Largest Facility</MudText>
-                    <MudText Typo="Typo.h6" Class="font-weight-bold">@_largestFacility</MudText>
-                    <MudText Typo="Typo.caption" Color="Color.Secondary">By current population</MudText>
-                </MudCardContent>
-            </MudCard>
+            <KpiCard Title="Largest Facility"
+                     Value="@_largestFacility"
+                     Subtitle="By current population"
+                     Tooltip="The facility with the highest reported population in the most recent snapshot." />
         </MudItem>
         <MudItem xs="12" md="3">
-            <MudCard Elevation="2">
-                <MudCardContent Class="pa-4">
-                    <MudText Typo="Typo.body2" Color="Color.Secondary">Data Through</MudText>
-                    <MudText Typo="Typo.h5" Class="font-weight-bold">
-                        @(_latestSnapshotDate?.ToString("MMM yyyy") ?? "—")
-                    </MudText>
-                    <MudText Typo="Typo.caption" Color="Color.Secondary">Deportation Data Project</MudText>
-                </MudCardContent>
-            </MudCard>
+            <KpiCard Title="Data Through"
+                     Value="@(_latestSnapshotDate?.ToString("MMM yyyy") ?? "—")"
+                     Subtitle="Deportation Data Project"
+                     Tooltip="The date of the most recent population snapshot available in the dataset." />
         </MudItem>
     </MudGrid>
 
