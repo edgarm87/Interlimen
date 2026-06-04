@@ -30,26 +30,30 @@ else
             <StatCard Title="Total Arrests"
                       Value="@_arrestCount.ToString("N0")"
                       Icon="@Icons.Material.Filled.PersonSearch"
-                      Color="Color.Warning" />
+                      Color="Color.Warning"
+                      Tooltip="Total immigration arrests recorded in the DHS enforcement dataset." />
         </MudItem>
         <MudItem xs="12" sm="6" md="3">
             <StatCard Title="Total Removals"
                       Value="@_removalCount.ToString("N0")"
                       Icon="@Icons.Material.Filled.FlightTakeoff"
-                      Color="Color.Error" />
+                      Color="Color.Error"
+                      Tooltip="Total individuals removed from the U.S. recorded in the DHS enforcement dataset." />
         </MudItem>
         <MudItem xs="12" sm="6" md="3">
             <StatCard Title="Currently Detained"
                       Value="@(_detentionSummary?.CurrentDetained.ToString("N0") ?? "—")"
                       Icon="@Icons.Material.Filled.Lock"
                       Color="Color.Secondary"
-                      Trend="@_detentionSummary?.TrendDisplay" />
+                      Trend="@_detentionSummary?.TrendDisplay"
+                      Tooltip="Number of individuals currently held in ICE detention facilities as of the most recent snapshot." />
         </MudItem>
         <MudItem xs="12" sm="6" md="3">
             <StatCard Title="Active Detainers"
                       Value="@_activeDetainers.ToString("N0")"
                       Icon="@Icons.Material.Filled.Gavel"
-                      Color="Color.Info" />
+                      Color="Color.Info"
+                      Tooltip="ICE detainers currently lodged with local law enforcement requesting custody of individuals upon release." />
         </MudItem>
     </MudGrid>
 

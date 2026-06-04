@@ -23,52 +23,28 @@ else
     <!-- KPI Row -->
     <MudGrid Class="mb-4">
         <MudItem xs="12" md="3">
-            <MudCard Elevation="2">
-                <MudCardContent Class="pa-4">
-                    <MudText Typo="Typo.body2" Color="Color.Secondary">Peak Year</MudText>
-                    <MudText Typo="Typo.h5" Class="font-weight-bold">FY@_peakYear</MudText>
-                    <MudText Typo="Typo.caption" Color="Color.Secondary">
-                        @_peakTotal.ToString("N0") removals
-                    </MudText>
-                </MudCardContent>
-            </MudCard>
+            <KpiCard Title="Peak Year"
+                     Value="@($"FY{_peakYear}")"
+                     Subtitle="@($"{_peakTotal:N0} removals")"
+                     Tooltip="The fiscal year with the highest total number of removals in the dataset." />
         </MudItem>
         <MudItem xs="12" md="3">
-            <MudCard Elevation="2">
-                <MudCardContent Class="pa-4">
-                    <MudText Typo="Typo.body2" Color="Color.Secondary">Most Recent Year</MudText>
-                    <MudText Typo="Typo.h5" Class="font-weight-bold">FY2022</MudText>
-                    <MudText Typo="Typo.caption" Color="Color.Secondary">
-                        @_latestTotal.ToString("N0") removals
-                    </MudText>
-                </MudCardContent>
-            </MudCard>
+            <KpiCard Title="Most Recent Year"
+                     Value="FY2022"
+                     Subtitle="@($"{_latestTotal:N0} removals")"
+                     Tooltip="Total removals recorded in FY2022, the most recent year in this dataset." />
         </MudItem>
         <MudItem xs="12" md="3">
-            <MudCard Elevation="2">
-                <MudCardContent Class="pa-4">
-                    <MudText Typo="Typo.body2" Color="Color.Secondary">10-Year Total</MudText>
-                    <MudText Typo="Typo.h5" Class="font-weight-bold">
-                        @((_grandTotal / 1_000_000m).ToString("F1"))M
-                    </MudText>
-                    <MudText Typo="Typo.caption" Color="Color.Secondary">
-                        FY2013 — FY2022
-                    </MudText>
-                </MudCardContent>
-            </MudCard>
+            <KpiCard Title="10-Year Total"
+                     Value="@($"{_grandTotal / 1_000_000m:F1}M")"
+                     Subtitle="FY2013 — FY2022"
+                     Tooltip="Cumulative removals across all fiscal years from FY2013 through FY2022." />
         </MudItem>
         <MudItem xs="12" md="3">
-            <MudCard Elevation="2">
-                <MudCardContent Class="pa-4">
-                    <MudText Typo="Typo.body2" Color="Color.Secondary">Avg Criminal %</MudText>
-                    <MudText Typo="Typo.h5" Class="font-weight-bold">
-                        @_avgCriminalPct.ToString("F1")%
-                    </MudText>
-                    <MudText Typo="Typo.caption" Color="Color.Secondary">
-                        Across all years
-                    </MudText>
-                </MudCardContent>
-            </MudCard>
+            <KpiCard Title="Avg Criminal %"
+                     Value="@($"{_avgCriminalPct:F1}%")"
+                     Subtitle="Across all years"
+                     Tooltip="Average percentage of removals classified as criminal across all fiscal years in the dataset." />
         </MudItem>
     </MudGrid>
 

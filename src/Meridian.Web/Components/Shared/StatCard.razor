@@ -6,13 +6,11 @@
                     <MudText Typo="Typo.body2" Color="Color.Secondary">@Title</MudText>
                     @if (!string.IsNullOrEmpty(Tooltip))
                     {
-                        <MudTooltip Text="@Tooltip" Placement="Placement.Top" Arrow="true">
-                            <ChildContent>
-                                <MudIcon Icon="@Icons.Material.Outlined.Info"
-                                         Size="Size.Small"
-                                         Style="color:#9e9e9e; cursor:help; font-size:14px" />
-                            </ChildContent>
-                        </MudTooltip>
+                        <span title="@Tooltip" style="display:inline-flex; align-items:center; cursor:help;">
+                            <MudIcon Icon="@Icons.Material.Outlined.Info"
+                                     Size="Size.Small"
+                                     Style="color:#9e9e9e; font-size:14px;" />
+                        </span>
                     }
                 </div>
                 <MudText Typo="Typo.h4" Class="mt-1 font-weight-bold">@Value</MudText>
