@@ -1,6 +1,7 @@
 @page "/cases"
 @using Microsoft.AspNetCore.Authorization
 @using Meridian.Application.Features.Courts
+@using Meridian.Application.Features.Judges
 @using Meridian.Domain.Entities
 @rendermode @(new InteractiveServerRenderMode(prerender: false))
 @attribute [Authorize]
@@ -10,7 +11,7 @@
 
 <MudText Typo="Typo.h4" Class="mb-1">Case Search</MudText>
 <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-4">
-    Search 16.1M immigration court proceedings · Source: EOIR FOIA data
+    Search 12.9M immigration court proceedings · Source: EOIR FOIA data
 </MudText>
 
 <MudPaper Class="pa-4 mb-4" Elevation="1">
@@ -89,6 +90,7 @@
                 <MudTable Items="_cases.Take(200)" Dense="true" Hover="true" Striped="true">
                     <HeaderContent>
                         <MudTh>Case #</MudTh>
+                        <MudTh>Judge</MudTh>
                         <MudTh>Court</MudTh>
                         <MudTh>Nationality</MudTh>
                         <MudTh>Case Type</MudTh>
@@ -101,6 +103,18 @@
                             <MudText Typo="Typo.body2" Style="font-family:monospace">
                                 @context.CaseNumber
                             </MudText>
+                        </MudTd>
+                        <MudTd>
+                            @if (_judgeMap.TryGetValue(context.JudgeId, out var judge))
+                            {
+                                <MudLink Href="@($"/judges/{context.JudgeId}")">
+                                    @judge.Name
+                                </MudLink>
+                            }
+                            else
+                            {
+                                <MudText Typo="Typo.body2" Color="Color.Secondary">—</MudText>
+                            }
                         </MudTd>
                         <MudTd>
                             <MudText Typo="Typo.body2">@context.CourtCity</MudText>
@@ -156,8 +170,17 @@ else
     private string _filterOutcome = "";
     private string _filterState = "";
     private string _filterCaseNumber = "";
+    private Dictionary<Guid, (string Name, string City, string State)> _judgeMap = new();
     private List<CourtCase> _cases = new();
 
+    protected override async Task OnInitializedAsync()
+    {
+        var judges = await Mediator.Send(new GetAllJudgesWithStats());
+        _judgeMap = judges.ToDictionary(
+            j => j.Id,
+            j => ($"{j.FullName}", j.CourtCity, j.CourtState));
+    }
+    
     private async Task Search()
     {
         if (string.IsNullOrWhiteSpace(_filterCity) &&
