@@ -56,6 +56,9 @@ public interface IEnforcementActionRepository : IRepository<EnforcementAction>
     Task<List<(string Nationality, int Count)>> GetTopNationalitiesAsync(int topN, int? year, CancellationToken ct = default);
     Task<(int Total, int Criminal, string TopNationality, string TopAOR, DateTime Earliest, DateTime Latest)> GetSummaryAsync(int? year, CancellationToken ct = default);
     Task<int> GetCountByTypeAsync(EnforcementActionType type, CancellationToken ct = default);
+    Task<List<(string Nationality, int Count)>> GetTopNationalitiesByAORAsync(string aor, int topN, CancellationToken ct = default);
+    Task<List<(int Year, int Month, int Total)>> GetMonthlyTrendByAORAsync(string aor, CancellationToken ct = default);
+    Task<(DateTime Earliest, DateTime Latest)> GetDateRangeByTypeAsync(EnforcementActionType type, CancellationToken ct = default);
 }
 
 public interface IIceDetainerRepository : IRepository<IceDetainer>

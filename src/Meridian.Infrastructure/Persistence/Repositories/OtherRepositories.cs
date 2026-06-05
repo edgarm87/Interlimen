@@ -284,6 +284,48 @@ public class EnforcementActionRepository
         EnforcementActionType type, CancellationToken ct = default)
         => await _db.EnforcementActions
             .CountAsync(e => e.ActionType == type, ct);
+
+    public async Task<List<(string Nationality, int Count)>> GetTopNationalitiesByAORAsync(
+        string aor, int topN, CancellationToken ct = default)
+    {
+        var results = await _db.EnforcementActions
+            .Where(e => e.ActionType == EnforcementActionType.Arrest
+                        && e.AreaOfResponsibility == aor + " Area of Responsibility"
+                        && e.Nationality != null)
+            .GroupBy(e => e.Nationality)
+            .Select(g => new { Nationality = g.Key!, Count = g.Count() })
+            .OrderByDescending(x => x.Count)
+            .Take(topN)
+            .ToListAsync(ct);
+
+        return results.Select(x => (x.Nationality, x.Count)).ToList();
+    }
+
+    public async Task<List<(int Year, int Month, int Total)>> GetMonthlyTrendByAORAsync(
+        string aor, CancellationToken ct = default)
+    {
+        var results = await _db.EnforcementActions
+            .Where(e => e.ActionType == EnforcementActionType.Arrest
+                        && e.AreaOfResponsibility == aor + " Area of Responsibility")
+            .GroupBy(e => new { e.ActionDate.Year, e.ActionDate.Month })
+            .Select(g => new { g.Key.Year, g.Key.Month, Total = g.Count() })
+            .OrderBy(x => x.Year).ThenBy(x => x.Month)
+            .ToListAsync(ct);
+
+        return results.Select(x => (x.Year, x.Month, x.Total)).ToList();
+    }
+    
+    public async Task<(DateTime Earliest, DateTime Latest)> GetDateRangeByTypeAsync(
+        EnforcementActionType type, CancellationToken ct = default)
+    {
+        var earliest = await _db.EnforcementActions
+            .Where(e => e.ActionType == type)
+            .MinAsync(e => e.ActionDate, ct);
+        var latest = await _db.EnforcementActions
+            .Where(e => e.ActionType == type)
+            .MaxAsync(e => e.ActionDate, ct);
+        return (earliest, latest);
+    }
 }
 
 public class IceDetainerRepository : Repository<IceDetainer>, IIceDetainerRepository

@@ -1,0 +1,232 @@
+@page "/removals/map"
+@using Microsoft.AspNetCore.Authorization
+@using Meridian.Application.Features.Enforcement
+@using ApexCharts
+@using Meridian.Domain.Entities
+@using Color = MudBlazor.Color
+@rendermode @(new InteractiveServerRenderMode(prerender: false))
+@attribute [Authorize]
+@inject IMediator Mediator
+@inject IJSRuntime JS
+@implements IAsyncDisposable
+
+<PageTitle>ICE Arrests Map — INTERLIMEN</PageTitle>
+
+<MudText Typo="Typo.h4" Class="mb-1">ICE Arrests Map</MudText>
+<MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-4">
+    Arrest volume by ICE field office · Click a bubble for details
+</MudText>
+
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+@if (_loading)
+{
+    <MudProgressLinear Indeterminate="true" Color="Color.Primary" Class="mb-4" />
+}
+else
+{
+    <MudGrid>
+        <!-- Map -->
+        <MudItem xs="12" md="@(_selectedAor != null ? 8 : 12)">
+            <MudCard Elevation="2">
+                <MudCardContent Class="pa-0">
+                    <div id="arrests-map" style="height:600px; width:100%; border-radius:4px;"></div>
+                </MudCardContent>
+                <MudText Typo="Typo.caption" Color="Color.Secondary" Class="pa-2">
+                    Source: ICE Enforcement and Removal Operations (ERO) · FY@_earliestFY–FY@_latestFY
+                </MudText>
+            </MudCard>
+        </MudItem>
+
+        <!-- Side Panel -->
+        @if (_selectedAor != null)
+        {
+            <MudItem xs="12" md="4">
+                <MudCard Elevation="2" Style="height:600px; overflow-y:auto;">
+                    <MudCardHeader>
+                        <CardHeaderContent>
+                            <MudText Typo="Typo.h6">@_selectedAor.FieldOffice</MudText>
+                            <MudText Typo="Typo.body2" Color="Color.Secondary">Field Office Detail</MudText>
+                        </CardHeaderContent>
+                        <CardHeaderActions>
+                            <MudIconButton Icon="@Icons.Material.Filled.Close"
+                                           OnClick="() => _selectedAor = null" />
+                        </CardHeaderActions>
+                    </MudCardHeader>
+                    <MudCardContent>
+                        <!-- Total Arrests -->
+                        <MudText Typo="Typo.overline" Color="Color.Secondary">Total Arrests</MudText>
+                        <MudText Typo="Typo.h4" Class="font-weight-bold mb-3">
+                            @_selectedAor.TotalArrests.ToString("N0")
+                        </MudText>
+
+                        <!-- Criminal Breakdown -->
+                        <MudText Typo="Typo.overline" Color="Color.Secondary">Criminal vs Non-Criminal</MudText>
+                        <div class="d-flex gap-4 mb-1 mt-1">
+                            <div>
+                                <MudText Typo="Typo.h6" Style="color:#D32F2F;">@_selectedAor.CriminalArrests.ToString("N0")</MudText>
+                                <MudText Typo="Typo.caption" Color="Color.Secondary">Criminal (@_selectedAor.CriminalPercent%)</MudText>
+                            </div>
+                            <div>
+                                <MudText Typo="Typo.h6" Style="color:#1B4F72;">@_selectedAor.NonCriminalArrests.ToString("N0")</MudText>
+                                <MudText Typo="Typo.caption" Color="Color.Secondary">Non-Criminal (@_selectedAor.NonCriminalPercent%)</MudText>
+                            </div>
+                        </div>
+                        <MudProgressLinear Value="@((double)_selectedAor.CriminalPercent)"
+                                           Color="Color.Error" Class="mb-4" />
+
+                        <!-- Top Nationalities -->
+                        <MudText Typo="Typo.overline" Color="Color.Secondary" Class="mb-1">Top Nationalities</MudText>
+                        @foreach (var (nat, count) in _selectedAor.TopNationalities)
+                        {
+                            <div class="d-flex justify-space-between mb-1">
+                                <MudText Typo="Typo.body2">@nat</MudText>
+                                <MudText Typo="Typo.body2" Class="font-weight-bold">@count.ToString("N0")</MudText>
+                            </div>
+                        }
+
+                        <!-- National Average Comparison -->
+                        <MudDivider Class="my-3" />
+                        <MudText Typo="Typo.overline" Color="Color.Secondary">vs National Average</MudText>
+                        @{
+                            var allTotal = _arrests.Sum(a => a.TotalArrests);
+                            var nationalAvg = _arrests.Count > 0 ? allTotal / _arrests.Count : 0;
+                            var diff = _selectedAor.TotalArrests - nationalAvg;
+                            var isAbove = diff >= 0;
+                        }
+                        <div class="d-flex align-center gap-2 mt-1 mb-4">
+                            <MudText Typo="Typo.h6" Style="@(isAbove ? "color:#D32F2F" : "color:#2E7D32")">
+                                @(isAbove ? "+" : "")@diff.ToString("N0")
+                            </MudText>
+                            <MudText Typo="Typo.body2" Color="Color.Secondary">
+                                vs avg @nationalAvg.ToString("N0") arrests/office
+                            </MudText>
+                        </div>
+
+                        <!-- Monthly Trend -->
+                        <MudText Typo="Typo.overline" Color="Color.Secondary" Class="mb-2">Monthly Trend</MudText>
+                        @if (_selectedAor.MonthlyTrend.Any())
+                        {
+                            <ApexChart TItem="TrendPoint"
+                                       Height="180"
+                                       Options="_trendOptions">
+                                <ApexPointSeries TItem="TrendPoint"
+                                                 Items="_trendPoints"
+                                                 Name="Arrests"
+                                                 SeriesType="SeriesType.Line"
+                                                 XValue="@(e => $"{e.Year}-{e.Month:D2}")"
+                                                 YValue="@(e => e.Total)"
+                                                 Color="#1B4F72" />
+                            </ApexChart>
+                        }
+                    </MudCardContent>
+                </MudCard>
+            </MudItem>
+        }
+    </MudGrid>
+}
+
+@code {
+    private bool _loading = true;
+    private List<ArrestsByFieldOfficeDto> _arrests = new();
+    private AorDetailDto? _selectedAor;
+    private List<TrendPoint> _trendPoints = new();
+    private DotNetObjectReference<ArrestsMap>? _dotNetRef;
+    private int _earliestFY;
+    private int _latestFY;
+
+    private ApexChartOptions<TrendPoint> _trendOptions = new()
+    {
+        Chart = new Chart { Toolbar = new Toolbar { Show = false }, Sparkline = new ChartSparkline { Enabled = false } },
+        Stroke = new Stroke { Curve = Curve.Smooth, Width = new List<int> { 2 } },
+        DataLabels = new DataLabels { Enabled = false },
+        Xaxis = new XAxis { Type = XAxisType.Category, Labels = new XAxisLabels { Show = false } },
+        Yaxis = new List<YAxis> { new YAxis { Labels = new YAxisLabels { Show = false } } },
+        Grid = new Grid { Show = false }
+    };
+
+    protected override async Task OnInitializedAsync()
+    {
+        _arrests = await Mediator.Send(new GetArrestsByFieldOffice());
+        var dateRange = await Mediator.Send(new GetActionDateRange(EnforcementActionType.Arrest));
+        _earliestFY = dateRange.Earliest.Year;
+        _latestFY = dateRange.Latest.Year;
+        _loading = false;
+    }
+
+    private bool _mapInitialized = false;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!_loading && !_mapInitialized)
+        {
+            _mapInitialized = true;
+            _dotNetRef = DotNetObjectReference.Create(this);
+            var aorData = _arrests.Select(a => new
+            {
+                name = a.FieldOffice,
+                totalArrests = a.TotalArrests,
+                lat = AorCoordinates.GetOrDefault(a.FieldOffice)?.Lat ?? 0,
+                lng = AorCoordinates.GetOrDefault(a.FieldOffice)?.Lng ?? 0
+            }).Where(a => a.lat != 0).ToList();
+
+            await Task.Delay(50);
+            await JS.InvokeVoidAsync("arrestsMap.init", _dotNetRef, aorData);
+        }
+    }
+
+    [JSInvokable]
+    public async Task OnAorClicked(string aorName)
+    {
+        _selectedAor = await Mediator.Send(new GetAorDetail(aorName));
+        _trendPoints = _selectedAor.MonthlyTrend
+            .Select(t => new TrendPoint(t.Year, t.Month, t.Total))
+            .ToList();
+        await InvokeAsync(StateHasChanged);
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        await JS.InvokeVoidAsync("arrestsMap.destroy");
+        _dotNetRef?.Dispose();
+    }
+
+    public record TrendPoint(int Year, int Month, int Total);
+
+    // Hardcoded AOR coordinates
+    private static class AorCoordinates
+    {
+        private static readonly Dictionary<string, (double Lat, double Lng)> _coords = new()
+        {
+            ["Atlanta"] = (33.749, -84.388),
+            ["Baltimore"] = (39.290, -76.612),
+            ["Boston"] = (42.360, -71.058),
+            ["Buffalo"] = (42.886, -78.878),
+            ["Chicago"] = (41.878, -87.629),
+            ["Dallas"] = (32.776, -96.796),
+            ["Denver"] = (39.739, -104.984),
+            ["Detroit"] = (42.331, -83.045),
+            ["El Paso"] = (31.761, -106.485),
+            ["Harlingen"] = (26.190, -97.696),
+            ["Houston"] = (29.760, -95.369),
+            ["Los Angeles"] = (34.052, -118.243),
+            ["Miami"] = (25.761, -80.191),
+            ["New Orleans"] = (29.951, -90.071),
+            ["New York City"] = (40.712, -74.005),
+            ["Newark"] = (40.735, -74.172),
+            ["Philadelphia"] = (39.952, -75.163),
+            ["Phoenix"] = (33.448, -112.073),
+            ["Salt Lake City"] = (40.760, -111.891),
+            ["San Antonio"] = (29.424, -98.493),
+            ["San Diego"] = (32.715, -117.161),
+            ["San Francisco"] = (37.774, -122.419),
+            ["Seattle"] = (47.606, -122.332),
+            ["St. Paul"] = (44.953, -93.089),
+            ["Washington"] = (38.907, -77.036),
+        };
+
+        public static (double Lat, double Lng)? GetOrDefault(string name)
+            => _coords.TryGetValue(name, out var coords) ? coords : null;
+    }
+}

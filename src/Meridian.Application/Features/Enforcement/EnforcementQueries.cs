@@ -50,6 +50,19 @@ public record GetRemovalsByDisposition(int? Year = null) : IRequest<List<Removal
 public record GetTopNationalitiesICE(int TopN = 10, int? Year = null) : IRequest<List<RemovalsByNationalityICEDto>>;
 public record GetEnforcementSummary(int? Year = null) : IRequest<EnforcementSummaryDto>;
 public record GetArrestsByFieldOffice(int? Year = null) : IRequest<List<ArrestsByFieldOfficeDto>>;
+public record AorDetailDto(
+    string FieldOffice,
+    int TotalArrests,
+    int CriminalArrests,
+    decimal CriminalPercent,
+    int NonCriminalArrests,
+    decimal NonCriminalPercent,
+    List<(string Nationality, int Count)> TopNationalities,
+    List<(int Year, int Month, int Total)> MonthlyTrend,
+    decimal NationalAvgMonthly
+);
+
+public record GetAorDetail(string Aor) : IRequest<AorDetailDto>;
 public record GetActiveDetainersCount() : IRequest<int>;
 public record GetActionCount(EnforcementActionType ActionType) : IRequest<int>;
 
@@ -152,6 +165,54 @@ public class GetArrestsByFieldOfficeHandler
             r.Total > 0 ? Math.Round((decimal)r.Criminal / r.Total * 100, 1) : 0
         )).OrderByDescending(x => x.TotalArrests).ToList();
     }
+}
+
+public class GetAorDetailHandler : IRequestHandler<GetAorDetail, AorDetailDto>
+{
+    private readonly IEnforcementActionRepository _repo;
+    public GetAorDetailHandler(IEnforcementActionRepository repo) => _repo = repo;
+
+    public async Task<AorDetailDto> Handle(GetAorDetail request, CancellationToken ct)
+    {
+        var allAors = await _repo.GetArrestsByAORAsync(null, ct);
+        var aor = allAors.FirstOrDefault(x =>
+            x.AOR.Replace(" Area of Responsibility", "") == request.Aor);
+
+        var total = aor.Total;
+        var criminal = aor.Criminal;
+        var nonCriminal = total - criminal;
+
+        var topNats = await _repo.GetTopNationalitiesByAORAsync(request.Aor, 5, ct);
+        var trend = await _repo.GetMonthlyTrendByAORAsync(request.Aor, ct);
+
+        var nationalTotal = allAors.Sum(x => x.Total);
+        var nationalAvgMonthly = trend.Count > 0
+            ? Math.Round((decimal)nationalTotal / allAors.Count / Math.Max(trend.Count, 1), 0)
+            : 0;
+
+        return new AorDetailDto(
+            request.Aor,
+            total,
+            criminal,
+            total > 0 ? Math.Round((decimal)criminal / total * 100, 1) : 0,
+            nonCriminal,
+            total > 0 ? Math.Round((decimal)nonCriminal / total * 100, 1) : 0,
+            topNats,
+            trend,
+            nationalAvgMonthly
+        );
+    }
+}
+
+public record GetActionDateRange(EnforcementActionType ActionType) : IRequest<(DateTime Earliest, DateTime Latest)>;
+
+public class GetActionDateRangeHandler : IRequestHandler<GetActionDateRange, (DateTime Earliest, DateTime Latest)>
+{
+    private readonly IEnforcementActionRepository _repo;
+    public GetActionDateRangeHandler(IEnforcementActionRepository repo) => _repo = repo;
+
+    public async Task<(DateTime Earliest, DateTime Latest)> Handle(GetActionDateRange request, CancellationToken ct)
+        => await _repo.GetDateRangeByTypeAsync(request.ActionType, ct);
 }
 
 public class GetActiveDetainersCountHandler
