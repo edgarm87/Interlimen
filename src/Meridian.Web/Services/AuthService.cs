@@ -91,7 +91,8 @@ public class AuthService
             EmailConfirmed = false,
             TermsAcceptedAt = acceptedTerms ? DateTime.UtcNow : null,
             TermsVersion = acceptedTerms ? "2025-06-01" : null,
-            LastLoginIp = _httpContextAccessor.HttpContext?.Connection.RemoteIpAddress?.ToString()
+            LastLoginIp = _httpContextAccessor.HttpContext?.Request.Headers["X-Forwarded-For"].FirstOrDefault()
+                          ?? _httpContextAccessor.HttpContext?.Connection.RemoteIpAddress?.ToString()
         };
 
         var result = await _userManager.CreateAsync(user, password);
