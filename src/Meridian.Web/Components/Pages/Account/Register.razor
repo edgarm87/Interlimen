@@ -66,12 +66,23 @@
                       Class="mb-4"
                       Disabled="_loading" />
 
+        <MudCheckBox @bind-Value="_acceptedTerms"
+                     Class="mb-3"
+                     Disabled="_loading">
+            <ChildContent>
+                <MudText Typo="Typo.body2">
+                    I agree to the <MudLink Href="/terms" Target="_blank">Terms of Service</MudLink>
+                    and <MudLink Href="/privacy" Target="_blank">Privacy Policy</MudLink>
+                </MudText>
+            </ChildContent>
+        </MudCheckBox>
+
         <MudButton Variant="Variant.Filled"
                    Color="Color.Primary"
                    FullWidth="true"
                    Size="Size.Large"
                    OnClick="HandleRegister"
-                   Disabled="_loading"
+                   Disabled="_loading || !_acceptedTerms"
                    Class="mb-3">
             @if (_loading)
             {
@@ -98,6 +109,7 @@
     private string _errorMessage = "";
     private bool _loading = false;
     private bool _success = false;
+    private bool _acceptedTerms = false;
 
     private async Task HandleRegister()
     {
@@ -112,9 +124,15 @@
             return;
         }
 
+        if (!_acceptedTerms)
+        {
+            _errorMessage = "You must accept the Terms of Service to continue.";
+            return;
+        }
+
         _loading = true;
         var result = await AuthService.RegisterAsync(
-            _orgName, _firstName, _lastName, _email, _password);
+            _orgName, _firstName, _lastName, _email, _password, _acceptedTerms);
         _loading = false;
 
         if (result.IsSuccess)

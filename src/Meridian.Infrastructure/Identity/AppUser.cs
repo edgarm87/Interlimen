@@ -17,6 +17,8 @@ public class AppUser : IdentityUser
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime? LastLoginAt { get; set; }
     public bool IsActive { get; set; } = true;
+    public DateTime? TermsAcceptedAt { get; set; }
+    public string? TermsVersion { get; set; }
 }
 
 /// <summary>

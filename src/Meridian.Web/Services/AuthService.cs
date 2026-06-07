@@ -63,7 +63,8 @@ public class AuthService
         string firstName,
         string lastName,
         string email,
-        string password)
+        string password,
+        bool acceptedTerms = false)
     {
         var existing = await _userManager.FindByEmailAsync(email);
         if (existing != null)
@@ -84,7 +85,9 @@ public class AuthService
             LastName = lastName,
             TenantId = tenant.Id,
             Role = UserRole.Owner,
-            EmailConfirmed = false
+            EmailConfirmed = false,
+            TermsAcceptedAt = acceptedTerms ? DateTime.UtcNow : null,
+            TermsVersion = acceptedTerms ? "2025-06-01" : null
         };
 
         var result = await _userManager.CreateAsync(user, password);
