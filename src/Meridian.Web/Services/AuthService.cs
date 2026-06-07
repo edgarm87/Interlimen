@@ -15,6 +15,7 @@ public class AuthService
     private readonly ILogger<AuthService> _logger;
     private readonly EmailService _emailService;
     private readonly IConfiguration _config;
+    private readonly IHttpContextAccessor _httpContextAccessor;
 
     public AuthService(
         UserManager<AppUser> userManager,
@@ -22,7 +23,8 @@ public class AuthService
         IUnitOfWork uow,
         ILogger<AuthService> logger,
         EmailService emailService,
-        IConfiguration config)
+        IConfiguration config,
+        IHttpContextAccessor httpContextAccessor)
     {
         _userManager = userManager;
         _signInManager = signInManager;
@@ -30,6 +32,7 @@ public class AuthService
         _logger = logger;
         _emailService = emailService;
         _config = config;
+        _httpContextAccessor = httpContextAccessor;
     }
 
     public async Task<Result> LoginAsync(string email, string password)
@@ -87,7 +90,8 @@ public class AuthService
             Role = UserRole.Owner,
             EmailConfirmed = false,
             TermsAcceptedAt = acceptedTerms ? DateTime.UtcNow : null,
-            TermsVersion = acceptedTerms ? "2025-06-01" : null
+            TermsVersion = acceptedTerms ? "2025-06-01" : null,
+            LastLoginIp = _httpContextAccessor.HttpContext?.Connection.RemoteIpAddress?.ToString()
         };
 
         var result = await _userManager.CreateAsync(user, password);

@@ -19,6 +19,7 @@ public class AppUser : IdentityUser
     public bool IsActive { get; set; } = true;
     public DateTime? TermsAcceptedAt { get; set; }
     public string? TermsVersion { get; set; }
+    public string? LastLoginIp { get; set; }
 }
 
 /// <summary>

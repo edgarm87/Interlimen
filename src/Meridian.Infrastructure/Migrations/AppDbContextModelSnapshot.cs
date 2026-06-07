@@ -849,6 +849,9 @@ namespace Meridian.Infrastructure.Migrations
                     b.Property<DateTime?>("LastLoginAt")
                         .HasColumnType("timestamp without time zone");
 
+                    b.Property<string>("LastLoginIp")
+                        .HasColumnType("text");
+
                     b.Property<string>("LastName")
                         .IsRequired()
                         .HasColumnType("text");
