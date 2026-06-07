@@ -62,6 +62,7 @@ app.MapPost("/auth/login", async (HttpContext ctx,
     {
         user.LastLoginAt = DateTime.UtcNow;
         user.LastLoginIp = ctx.Request.Headers["X-Forwarded-For"].FirstOrDefault()
+                               ?.Split(',').First().Trim()
                            ?? ctx.Connection.RemoteIpAddress?.ToString();
         await userManager.UpdateAsync(user);
         return Results.Redirect(string.IsNullOrEmpty(returnUrl) ? "/dashboard" : returnUrl);

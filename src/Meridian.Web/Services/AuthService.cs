@@ -92,6 +92,7 @@ public class AuthService
             TermsAcceptedAt = acceptedTerms ? DateTime.UtcNow : null,
             TermsVersion = acceptedTerms ? "2025-06-01" : null,
             LastLoginIp = _httpContextAccessor.HttpContext?.Request.Headers["X-Forwarded-For"].FirstOrDefault()
+                              ?.Split(',').First().Trim()
                           ?? _httpContextAccessor.HttpContext?.Connection.RemoteIpAddress?.ToString()
         };
 
