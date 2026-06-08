@@ -214,8 +214,10 @@
     <footer class="footer">
         <div class="footer-inner">
             <span class="logo">INTERLIMEN</span>
-            <span class="footer-copy">Data sourced from public FOIA releases. Not affiliated with ICE or EOIR.</span>
-            <span class="footer-copy">© @DateTime.Now.Year Interlimen Analytics Technology, LLC</span>
+            <div style="display:flex; flex-direction:column; align-items:center; gap:4px; flex:1;">
+                <span class="footer-copy" style="flex:unset;">Data sourced from public FOIA releases. Not affiliated with ICE or EOIR.</span>
+                <span class="footer-copy" style="flex:unset;">© @DateTime.Now.Year Interlimen Analytics Technology, LLC</span>
+            </div>
             <div style="display:flex; gap:16px; align-items:center;">
                 <a href="/terms" class="footer-link">Terms</a>
                 <a href="/privacy" class="footer-link">Privacy</a>
