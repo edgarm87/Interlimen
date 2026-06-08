@@ -33,7 +33,9 @@
             </MudAppBar>
             <MudDrawer @bind-Open="_drawerOpen"
                        Elevation="2"
-                       ClipMode="DrawerClipMode.Always">
+                       ClipMode="DrawerClipMode.Always"
+                       Breakpoint="Breakpoint.Md"
+                       Variant="@DrawerVariant.Responsive">
                 <MudDrawerHeader>
                     <MudText Typo="Typo.subtitle1" Class="mt-2 font-weight-bold">
                         @context.User.Identity?.Name
