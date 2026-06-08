@@ -1,3 +1,4 @@
+@rendermode @(new InteractiveServerRenderMode(prerender: false))
 <MudNavMenu>
     <MudNavLink Href="/dashboard" Match="NavLinkMatch.All"
                 Icon="@Icons.Material.Filled.Dashboard">
@@ -6,7 +7,7 @@
 
     <MudNavGroup Title="Courts & Judges"
                  Icon="@Icons.Material.Filled.Gavel"
-                 Expanded="true">
+                 Expanded="false">
         <MudNavLink Href="/judges"
                     Icon="@Icons.Material.Filled.Person">
             Judge Analytics

@@ -20,7 +20,7 @@
                 <MudIconButton Icon="@Icons.Material.Filled.Menu"
                                Color="Color.Inherit"
                                Edge="Edge.Start"
-                               OnClick="@ToggleDrawer" />
+                               OnClick="ToggleDrawer" />
                 <a href="/dashboard" style="display:flex; align-items:center; text-decoration:none; margin-left:8px;">
                     <img src="/logo.png" style="height:28px; margin-right:8px; border:2px solid rgba(255,255,255,0.4); border-radius:3px;" alt="INTERLIMEN" />
                     <span style="font-family:'DM Mono',monospace; font-size:14px; font-weight:500; letter-spacing:0.2em; color:#fff;">INTERLIMEN</span>
@@ -32,15 +32,16 @@
                                Color="Color.Inherit" />
             </MudAppBar>
             <MudDrawer @bind-Open="_drawerOpen"
-                       Elevation="2"
-                       ClipMode="DrawerClipMode.Always"
+                       Variant="DrawerVariant.Responsive"
                        Breakpoint="Breakpoint.Md"
-                       Variant="@DrawerVariant.Responsive">
+                       Elevation="2"
+                       ClipMode="DrawerClipMode.Always">
                 <MudDrawerHeader>
                     <MudText Typo="Typo.subtitle1" Class="mt-2 font-weight-bold">
                         @context.User.Identity?.Name
                     </MudText>
                 </MudDrawerHeader>
+
                 <NavMenu />
             </MudDrawer>
             <MudMainContent>
