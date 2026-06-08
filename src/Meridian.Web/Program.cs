@@ -82,6 +82,60 @@ app.MapPost("/auth/logout", async (HttpContext ctx,
     return Results.Redirect("/account/login");
 });
 
+// Sitemap
+app.MapGet("/sitemap.xml", (HttpContext ctx) =>
+{
+    var baseUrl = "https://interlimen.com";
+    var today = DateTime.UtcNow.ToString("yyyy-MM-dd");
+    var xml = $"""
+               <?xml version="1.0" encoding="UTF-8"?>
+               <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+                   <url>
+                       <loc>{baseUrl}/</loc>
+                       <lastmod>{today}</lastmod>
+                       <changefreq>weekly</changefreq>
+                       <priority>1.0</priority>
+                   </url>
+                   <url>
+                       <loc>{baseUrl}/pricing</loc>
+                       <lastmod>{today}</lastmod>
+                       <changefreq>monthly</changefreq>
+                       <priority>0.8</priority>
+                   </url>
+                   <url>
+                       <loc>{baseUrl}/terms</loc>
+                       <lastmod>{today}</lastmod>
+                       <changefreq>yearly</changefreq>
+                       <priority>0.3</priority>
+                   </url>
+                   <url>
+                       <loc>{baseUrl}/privacy</loc>
+                       <lastmod>{today}</lastmod>
+                       <changefreq>yearly</changefreq>
+                       <priority>0.3</priority>
+                   </url>
+               </urlset>
+               """;
+    return Results.Content(xml, "application/xml");
+});
+
+// Robots.txt
+app.MapGet("/robots.txt", () => Results.Content("""
+                                                User-agent: *
+                                                Allow: /
+                                                Disallow: /dashboard
+                                                Disallow: /judges
+                                                Disallow: /courts
+                                                Disallow: /cases
+                                                Disallow: /detention
+                                                Disallow: /removals
+                                                Disallow: /settings
+                                                Disallow: /alerts
+                                                Disallow: /account
+
+                                                Sitemap: https://interlimen.com/sitemap.xml
+                                                """, "text/plain"));
+
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();
 
