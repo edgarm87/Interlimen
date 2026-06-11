@@ -1,0 +1,243 @@
+@page "/contact"
+@layout EmptyLayout
+@rendermode @(new InteractiveServerRenderMode(prerender: false))
+@using Meridian.Web.Services
+@using Microsoft.AspNetCore.Components
+@inject EmailService EmailService
+@inject IHttpContextAccessor HttpContextAccessor
+
+<PageTitle>Contact Us — INTERLIMEN</PageTitle>
+<HeadContent>
+    <meta name="description" content="Get in touch with INTERLIMEN. Questions about pricing, data, or enterprise plans." />
+    <link rel="canonical" href="https://interlimen.com/contact" />
+    <meta name="robots" content="noindex" />
+</HeadContent>
+<script>window.scrollTo(0, 0);</script>
+
+<div class="legal-page">
+    <nav class="legal-nav">
+        <a href="/" class="logo">
+            <img src="/logo.png" style="height:28px; margin-right:8px; border:2px solid rgba(255,255,255,0.4); border-radius:3px;" alt="INTERLIMEN" />
+            INTERLIMEN
+        </a>
+        <a href="/account/login" class="nav-link">Sign In →</a>
+    </nav>
+
+    <div class="contact-container">
+        <h1>Contact Us</h1>
+        <p class="contact-sub">
+            Have a question about pricing, data, or enterprise plans?
+        </p>
+
+        @if (_success)
+        {
+            <div class="success-box">
+                Message sent! We'll get back to you at <strong>@_email</strong> within one business day.
+            </div>
+        }
+
+        @if (!string.IsNullOrEmpty(_error))
+        {
+            <div class="error-box">@_error</div>
+        }
+
+        @if (!_success)
+        {
+            <div class="form-group">
+                <label class="form-label">Name</label>
+                <input @bind="_name" class="form-input" placeholder="Your name" />
+            </div>
+            <div class="form-group">
+                <label class="form-label">Email</label>
+                <input @bind="_email" type="email" class="form-input" placeholder="you@yourfirm.com" />
+            </div>
+            <div class="form-group">
+                <label class="form-label">Subject</label>
+                <input @bind="_subject" class="form-input" placeholder="What's this about?" />
+            </div>
+            <div class="form-group">
+                <label class="form-label">Message</label>
+                <textarea @bind="_message" class="form-input" placeholder="Tell us more..."></textarea>
+            </div>
+
+            <button class="btn-submit" @onclick="HandleSubmit" disabled="@_loading">
+                @if (_loading) { <span>Sending...</span> } else { <span>Send Message</span> }
+            </button>
+        }
+
+        <div class="legal-footer">
+            <a href="/">Home</a>
+            <a href="/pricing">Pricing</a>
+            <a href="/terms">Terms</a>
+            <a href="/privacy">Privacy</a>
+            <span>© @DateTime.Now.Year Interlimen Analytics Technology, LLC</span>
+        </div>
+    </div>
+</div>
+
+@code {
+    private string _name = "";
+    private string _email = "";
+    private string _subject = "";
+    private string _message = "";
+    private string _error = "";
+    private bool _loading = false;
+    private bool _success = false;
+
+    private async Task HandleSubmit()
+    {
+        _error = "";
+
+        if (string.IsNullOrWhiteSpace(_name) || string.IsNullOrWhiteSpace(_email) ||
+            string.IsNullOrWhiteSpace(_subject) || string.IsNullOrWhiteSpace(_message))
+        {
+            _error = "Please fill out all fields.";
+            return;
+        }
+
+        _loading = true;
+        try
+        {
+            var ip = HttpContextAccessor.HttpContext?.Request.Headers["X-Forwarded-For"].FirstOrDefault()
+                ?.Split(',').First().Trim()
+                ?? HttpContextAccessor.HttpContext?.Connection.RemoteIpAddress?.ToString()
+                ?? "Unknown";
+
+            await EmailService.SendContactEmailAsync(_name, _email, _subject, _message, ip);
+            _success = true;
+        }
+        catch
+        {
+            _error = "Something went wrong. Please email us directly at hello@interlimen.com.";
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+}
+
+<style>
+    .legal-page {
+        font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+        background: #f4f6f9;
+        min-height: 100vh;
+    }
+    .legal-nav {
+        background: #1B4F72;
+        padding: 0 40px;
+        height: 56px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+    .legal-nav .logo {
+        color: #fff;
+        font-family: 'DM Mono', monospace;
+        font-size: 14px;
+        font-weight: 500;
+        letter-spacing: 0.2em;
+        text-decoration: none;
+        display: flex;
+        align-items: center;
+    }
+    .legal-nav a.nav-link {
+        color: rgba(255,255,255,0.8);
+        text-decoration: none;
+        font-size: 14px;
+    }
+    .legal-nav a.nav-link:hover { color: #fff; }
+    .contact-container {
+        max-width: 600px;
+        margin: 0 auto;
+        padding: 48px 24px 80px;
+    }
+    .contact-container h1 {
+        font-size: 32px;
+        font-weight: 700;
+        color: #1B4F72;
+        margin-bottom: 8px;
+    }
+    .contact-sub {
+        font-size: 15px;
+        color: #5a6a7e;
+        margin-bottom: 40px;
+        line-height: 1.7;
+    }
+    .form-group {
+        margin-bottom: 20px;
+    }
+    .form-label {
+        display: block;
+        font-size: 13px;
+        font-weight: 500;
+        color: #1B4F72;
+        margin-bottom: 6px;
+    }
+    .form-input {
+        width: 100%;
+        padding: 12px 14px;
+        border: 1px solid rgba(27,79,114,0.2);
+        border-radius: 6px;
+        font-size: 15px;
+        font-family: inherit;
+        background: #fff;
+        color: #1a2332;
+        box-sizing: border-box;
+        transition: border-color 0.2s;
+    }
+    .form-input:focus {
+        outline: none;
+        border-color: #2E86C1;
+    }
+    textarea.form-input {
+        resize: vertical;
+        min-height: 140px;
+    }
+    .btn-submit {
+        display: block;
+        width: 100%;
+        background: #1B4F72;
+        color: #fff;
+        border: none;
+        padding: 14px;
+        border-radius: 8px;
+        font-size: 15px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: background 0.2s;
+        font-family: inherit;
+    }
+    .btn-submit:hover { background: #2E86C1; }
+    .btn-submit:disabled { background: #8a9ab0; cursor: not-allowed; }
+    .success-box {
+        background: #e8f4e8;
+        border: 1px solid #2d7a2d;
+        border-radius: 8px;
+        padding: 20px 24px;
+        color: #2d7a2d;
+        font-size: 15px;
+        margin-bottom: 24px;
+    }
+    .error-box {
+        background: #fdecea;
+        border: 1px solid #c0392b;
+        border-radius: 8px;
+        padding: 20px 24px;
+        color: #c0392b;
+        font-size: 15px;
+        margin-bottom: 24px;
+    }
+    .legal-footer {
+        border-top: 1px solid #dde3ea;
+        margin-top: 48px;
+        padding-top: 24px;
+        font-size: 13px;
+        color: #8a9ab0;
+        display: flex;
+        gap: 24px;
+        flex-wrap: wrap;
+    }
+    .legal-footer a { color: #8a9ab0; text-decoration: none; }
+    .legal-footer a:hover { color: #2E86C1; }
+</style>

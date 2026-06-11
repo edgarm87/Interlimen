@@ -108,4 +108,63 @@ public class EmailService
         _logger.LogError(ex, "Failed to send new user notification for {Email}", email);
     }
 }
+    
+    public async Task SendContactEmailAsync(string name, string email, string subject, string message, string ipAddress)
+    {
+        try
+        {
+            var notification = new EmailMessage
+            {
+                From = "INTERLIMEN <hello@interlimen.com>",
+                To = { "edgar.mora@interlimen.com" },
+                Subject = $"Contact Form: {subject}",
+                HtmlBody = $"""
+                    <div style="font-family:'Helvetica Neue',sans-serif; max-width:520px; margin:0 auto; padding:40px 20px; background:#f4f6f9;">
+                        <div style="background:#fff; border-radius:10px; padding:40px; border:1px solid rgba(27,79,114,0.12);">
+                            <div style="text-align:center; margin-bottom:32px;">
+                                <span style="font-family:monospace; font-size:14px; font-weight:600; letter-spacing:0.2em; color:#1B4F72;">INTERLIMEN</span>
+                            </div>
+                            <h2 style="font-size:22px; font-weight:700; color:#1B4F72; margin-bottom:24px;">
+                                New Contact Form Submission
+                            </h2>
+                            <table style="width:100%; font-size:14px; color:#5a6a7e; border-collapse:collapse;">
+                                <tr style="border-bottom:1px solid rgba(27,79,114,0.08)">
+                                    <td style="padding:10px 0; font-weight:500; color:#1B4F72; width:140px;">Name</td>
+                                    <td style="padding:10px 0">{name}</td>
+                                </tr>
+                                <tr style="border-bottom:1px solid rgba(27,79,114,0.08)">
+                                    <td style="padding:10px 0; font-weight:500; color:#1B4F72;">Email</td>
+                                    <td style="padding:10px 0">{email}</td>
+                                </tr>
+                                <tr style="border-bottom:1px solid rgba(27,79,114,0.08)">
+                                    <td style="padding:10px 0; font-weight:500; color:#1B4F72;">Subject</td>
+                                    <td style="padding:10px 0">{subject}</td>
+                                </tr>
+                                <tr style="border-bottom:1px solid rgba(27,79,114,0.08)">
+                                    <td style="padding:10px 0; font-weight:500; color:#1B4F72;">Message</td>
+                                    <td style="padding:10px 0; white-space:pre-wrap;">{message}</td>
+                                </tr>
+                                <tr style="border-bottom:1px solid rgba(27,79,114,0.08)">
+                                    <td style="padding:10px 0; font-weight:500; color:#1B4F72;">Timestamp</td>
+                                    <td style="padding:10px 0">{DateTime.UtcNow:MMM d, yyyy h:mm tt} UTC</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding:10px 0; font-weight:500; color:#1B4F72;">IP Address</td>
+                                    <td style="padding:10px 0">{ipAddress}</td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+                """
+            };
+
+            await _resend.EmailSendAsync(notification);
+            _logger.LogInformation("Contact form submission from {Email}", email);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to send contact form email from {Email}", email);
+            throw;
+        }
+    }
 }
