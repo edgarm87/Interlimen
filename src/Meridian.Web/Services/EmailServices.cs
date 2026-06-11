@@ -116,7 +116,7 @@ public class EmailService
             var notification = new EmailMessage
             {
                 From = "INTERLIMEN <hello@interlimen.com>",
-                To = { "edgar.mora@interlimen.com" },
+                To = { "edgarmora87@gmail.com" },
                 Subject = $"Contact Form: {subject}",
                 HtmlBody = $"""
                     <div style="font-family:'Helvetica Neue',sans-serif; max-width:520px; margin:0 auto; padding:40px 20px; background:#f4f6f9;">
