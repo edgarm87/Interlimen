@@ -20,7 +20,14 @@
             <img src="/logo.png" style="height:28px; margin-right:8px; border:2px solid rgba(255,255,255,0.4); border-radius:3px;" alt="INTERLIMEN" />
             INTERLIMEN
         </a>
-        <a href="/account/login" class="nav-link">Sign In →</a>
+        <AuthorizeView>
+            <Authorized>
+                <a href="/account/logout" class="footer-link">Sign Out</a>
+            </Authorized>
+            <NotAuthorized>
+                <a href="/account/login" class="footer-link">Sign In →</a>
+            </NotAuthorized>
+        </AuthorizeView>
     </nav>
 
     <div class="legal-container">
@@ -166,15 +173,10 @@
             Interlimen Analytics Technology, LLC<br />
             <a href="mailto:hello@interlimen.com">hello@interlimen.com</a>
         </p>
-
-        <div class="legal-footer">
-            <a href="/">Home</a>
-            <a href="/pricing">Pricing</a>
-            <a href="/privacy">Privacy</a>
-            <a href="/contact">Contact</a>
-            <span>© @DateTime.Now.Year Interlimen Analytics Technology, LLC</span>
-        </div>
     </div>
+    
+    <!-- Footer -->
+    <SharedFooter />
 </div>
 
 <style>
@@ -242,14 +244,4 @@
         text-decoration: none;
     }
     .legal-container a:hover { text-decoration: underline; }
-    .legal-footer {
-        border-top: 1px solid #dde3ea;
-        margin-top: 48px;
-        padding-top: 24px;
-        font-size: 13px;
-        color: #8a9ab0;
-        display: flex;
-        gap: 24px;
-        flex-wrap: wrap;
-    }
 </style>

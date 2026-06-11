@@ -1,0 +1,24 @@
+@using Microsoft.AspNetCore.Components.Authorization
+
+<footer class="footer">
+    <div class="footer-inner">
+        <span class="logo">INTERLIMEN</span>
+        <div style="display:flex; flex-direction:column; align-items:center; gap:4px; flex:1;">
+            <span class="footer-copy" style="flex:unset;">Data sourced from public FOIA releases. Not affiliated with ICE or EOIR.</span>
+            <span class="footer-copy" style="flex:unset;">© @DateTime.Now.Year Interlimen Analytics Technology, LLC</span>
+        </div>
+        <div style="display:flex; gap:16px; align-items:center;">
+            <a href="/terms" class="footer-link">Terms</a>
+            <a href="/privacy" class="footer-link">Privacy</a>
+            <a href="/contact" class="footer-link">Contact</a>
+            <AuthorizeView>
+                <Authorized>
+                    <a href="/account/logout" class="footer-link">Sign Out</a>
+                </Authorized>
+                <NotAuthorized>
+                    <a href="/account/login" class="footer-link">Sign In →</a>
+                </NotAuthorized>
+            </AuthorizeView>
+        </div>
+    </div>
+</footer>

@@ -49,3 +49,38 @@ h1:focus {
 .darker-border-checkbox.form-check-input {
     border-color: #929292;
 }
+
+.footer {
+    border-top: 1px solid rgba(27,79,114,0.10);
+    padding: 28px 0;
+    background: #f4f6f9;
+}
+.footer-inner {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 0 32px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+    flex-wrap: wrap;
+}
+.footer-copy {
+    font-size: 12px;
+    color: #8a9ab0;
+    flex: 1;
+    text-align: center;
+}
+.footer-link {
+    font-size: 13px;
+    color: #2E86C1;
+    text-decoration: none;
+}
+.footer-link:hover { color: #1B4F72; }
+.logo {
+    font-family: 'DM Mono', monospace;
+    font-size: 14px;
+    font-weight: 500;
+    letter-spacing: 0.2em;
+    color: #1B4F72;
+}
