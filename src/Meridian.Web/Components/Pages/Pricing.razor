@@ -5,15 +5,15 @@
 <PageTitle>Pricing — INTERLIMEN</PageTitle>
 
 <HeadContent>
-    <meta name="description" content="INTERLIMEN pricing — Individual plan at $55/mo, Team plan at $199/mo. 14-day free trial, no credit card required. Full access to 30M+ immigration records." />
+    <meta name="description" content="INTERLIMEN pricing — Individual plan at $45/mo billed annually. Team plan at $159/mo billed annually. 14-day free trial, no credit card required." />
     <meta property="og:title" content="Pricing — INTERLIMEN" />
-    <meta property="og:description" content="Start free for 14 days. Individual at $55/mo or $45/mo annually. Team at $199/mo or $159/mo annually." />
+    <meta property="og:description" content="Start free for 14 days. Individual at $45/mo billed annually. Team at $159/mo billed annually." />
     <meta property="og:url" content="https://interlimen.com/pricing" />
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="INTERLIMEN" />
     <meta name="twitter:card" content="summary" />
     <meta name="twitter:title" content="Pricing — INTERLIMEN" />
-    <meta name="twitter:description" content="Start free for 14 days. Individual at $55/mo or $45/mo annually. Team at $199/mo or $159/mo annually." />
+    <meta name="twitter:description" content="Start free for 14 days. Individual at $45/mo billed annually. Team at $159/mo billed annually." />
     <link rel="canonical" href="https://interlimen.com/pricing" />
 </HeadContent>
 
@@ -35,18 +35,6 @@
         <div class="eyebrow">SIMPLE PRICING</div>
         <h1 class="pricing-title">Start free. Pay when you're ready.</h1>
         <p class="pricing-sub">14-day free trial on all plans. No credit card required.</p>
-
-        <!-- Toggle -->
-        <div class="billing-toggle">
-            <span class="@(_annual ? "toggle-label" : "toggle-label active")">Monthly</span>
-            <div class="toggle-track" @onclick="ToggleBilling">
-                <div class="toggle-thumb @(_annual ? "annual" : "")"></div>
-            </div>
-            <span class="@(_annual ? "toggle-label active" : "toggle-label")">
-                Annually
-                <span class="save-badge">Save 18%</span>
-            </span>
-        </div>
     </section>
 
     <!-- Pricing Cards -->
@@ -60,17 +48,10 @@
                     <div class="plan-desc">For solo practitioners</div>
                 </div>
                 <div class="card-price">
-                    <span class="price-amount">@(_annual ? "$45" : "$55")</span>
+                    <span class="price-amount">$45</span>
                     <span class="price-period">/user/month</span>
                 </div>
-                @if (_annual)
-                {
-                    <div class="price-note">billed $540/year</div>
-                }
-                else
-                {
-                    <div class="price-note">billed monthly</div>
-                }
+                <div class="price-note">billed $540/year</div>
                 <a href="/account/register" class="btn-primary">Start Free Trial</a>
                 <div class="features-list">
                     <div class="feature-item">
@@ -108,17 +89,10 @@
                     <div class="plan-desc">For small firms</div>
                 </div>
                 <div class="card-price">
-                    <span class="price-amount">@(_annual ? "$159" : "$199")</span>
+                    <span class="price-amount">$159</span>
                     <span class="price-period">/month</span>
                 </div>
-                @if (_annual)
-                {
-                    <div class="price-note">billed $1,908/year</div>
-                }
-                else
-                {
-                    <div class="price-note">billed monthly</div>
-                }
+                <div class="price-note">billed $1,908/year</div>
                 <a href="/account/register" class="btn-primary btn-white">Start Free Trial</a>
                 <div class="features-list">
                     <div class="feature-item">
@@ -228,11 +202,6 @@
 
 </div>
 
-@code {
-    private bool _annual = true;
-    private void ToggleBilling() => _annual = !_annual;
-}
-
 <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -296,53 +265,6 @@
         font-size: 18px;
         color: #5a6a7e;
         margin-bottom: 40px;
-    }
-
-    /* Toggle */
-    .billing-toggle {
-        display: inline-flex;
-        align-items: center;
-        gap: 12px;
-        background: #fff;
-        border: 1px solid rgba(27,79,114,0.15);
-        border-radius: 50px;
-        padding: 8px 20px;
-    }
-    .toggle-label {
-        font-size: 14px;
-        color: #8a9ab0;
-        cursor: pointer;
-    }
-    .toggle-label.active { color: #1B4F72; font-weight: 600; }
-    .toggle-track {
-        width: 44px;
-        height: 24px;
-        background: #1B4F72;
-        border-radius: 12px;
-        position: relative;
-        cursor: pointer;
-        transition: background 0.2s;
-    }
-    .toggle-thumb {
-        position: absolute;
-        top: 3px;
-        left: 3px;
-        width: 18px;
-        height: 18px;
-        background: #fff;
-        border-radius: 50%;
-        transition: transform 0.2s;
-    }
-    .toggle-thumb.annual { transform: translateX(20px); }
-    .save-badge {
-        background: #e8f4e8;
-        color: #2d7a2d;
-        font-size: 11px;
-        font-weight: 600;
-        padding: 2px 8px;
-        border-radius: 20px;
-        margin-left: 6px;
-        letter-spacing: 0.02em;
     }
 
     /* Cards */
