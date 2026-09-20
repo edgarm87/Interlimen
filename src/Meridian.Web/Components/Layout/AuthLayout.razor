@@ -1,9 +1,9 @@
 @inherits LayoutComponentBase
 
-<MudThemeProvider />
+@* MudBlazor 6 includes a popover provider in each theme provider. *@
+<MudThemeProvider Theme="_theme" />
 <MudDialogProvider />
 <MudSnackbarProvider />
-<MudThemeProvider Theme="_theme" />
 
 <div style="min-height:100vh; background:#f4f6f9; display:flex; flex-direction:column;">
     <!-- Nav -->

@@ -5,8 +5,7 @@
 @using Meridian.Infrastructure.Persistence
 @using Microsoft.EntityFrameworkCore
 @inject AuthenticationStateProvider AuthStateProvider
-@inject UserManager<AppUser> UserManager
-@inject AppDbContext DbContext
+@inject IServiceScopeFactory ScopeFactory
 @inject NavigationManager Nav
 
 <MudThemeProvider Theme="_theme" />
@@ -20,6 +19,7 @@
                 <MudIconButton Icon="@Icons.Material.Filled.Menu"
                                Color="Color.Inherit"
                                Edge="Edge.Start"
+                               aria-label="Toggle navigation menu"
                                OnClick="ToggleDrawer" />
                 <a href="/dashboard" style="display:flex; align-items:center; text-decoration:none; margin-left:8px;">
                     <img src="/logo.png" style="height:28px; margin-right:8px; border:2px solid rgba(255,255,255,0.4); border-radius:3px;" alt="INTERLIMEN" />
@@ -123,10 +123,15 @@
     protected override async Task OnInitializedAsync()
     {
         var authState = await AuthStateProvider.GetAuthenticationStateAsync();
-        var appUser = await UserManager.GetUserAsync(authState.User);
+        // Layout and page initialization can overlap in an interactive circuit.
+        // Keep Identity and tenant queries off the page's scoped DbContext.
+        await using var scope = ScopeFactory.CreateAsyncScope();
+        var userManager = scope.ServiceProvider.GetRequiredService<UserManager<AppUser>>();
+        var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var appUser = await userManager.GetUserAsync(authState.User);
         if (appUser == null) return;
 
-        var tenant = await DbContext.Tenants.FindAsync(appUser.TenantId);
+        var tenant = await dbContext.Tenants.FindAsync(appUser.TenantId);
         if (tenant == null) return;
         
         _tenantStatus = tenant.Status;

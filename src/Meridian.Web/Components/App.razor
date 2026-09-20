@@ -13,11 +13,10 @@
     <link rel="stylesheet" href="app.css"/>
     <link rel="stylesheet" href="Meridian.Web.styles.css"/>
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet"/>
-    <HeadOutlet/>
+    <HeadOutlet @rendermode="AuthenticatedRenderMode" />
 </head>
 <body>
-<MudPopoverProvider />
-<Routes/>
+<Routes @rendermode="AuthenticatedRenderMode" />
 <script src="_framework/blazor.web.js"></script>
 <script src="_content/MudBlazor/MudBlazor.min.js"></script>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -26,3 +25,15 @@
 <script src="_content/Blazor-ApexCharts/blazor-apexcharts.js"></script>
 </body>
 </html>
+
+@code {
+    [CascadingParameter]
+    private HttpContext HttpContext { get; set; } = default!;
+
+    // The router owns the layout, so it must be interactive for the drawer's
+    // click handler and responsive state to work. Keep public pages static.
+    private IComponentRenderMode? AuthenticatedRenderMode =>
+        HttpContext.User.Identity?.IsAuthenticated == true
+            ? new InteractiveServerRenderMode(prerender: false)
+            : null;
+}
