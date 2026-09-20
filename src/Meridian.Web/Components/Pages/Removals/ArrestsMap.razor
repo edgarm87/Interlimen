@@ -109,6 +109,7 @@ else
                         @if (_selectedAor.MonthlyTrend.Any())
                         {
                             <ApexChart TItem="TrendPoint"
+                                       @key="_selectedAor.FieldOffice"
                                        Height="180"
                                        Options="_trendOptions">
                                 <ApexPointSeries TItem="TrendPoint"
