@@ -44,7 +44,9 @@ public record GetDetainers(
     string? CitizenshipCountry = null,
     string? Criminality = null,
     string? FacilityName = null,
-    bool? ActiveOnly = null) : IRequest<PagedDetainersDto>;
+    bool? ActiveOnly = null,
+    string SortBy = "PrepareDate",
+    bool SortDescending = true) : IRequest<PagedDetainersDto>;
 
 // ── Handlers ──────────────────────────────────────────────────────────────────
 
@@ -74,7 +76,7 @@ public class GetDetainersHandler
         var (items, total) = await _repo.GetPagedAsync(
             request.Page, request.PageSize, request.State,
             request.CitizenshipCountry, request.Criminality,
-            request.FacilityName, request.ActiveOnly, ct);
+            request.FacilityName, request.ActiveOnly, ct, request.SortBy, request.SortDescending);
 
         var rows = items.Select(d => new DetainerRowDto(
             d.Id, d.PrepareDate, d.State, d.Aor, d.FacilityName,

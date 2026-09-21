@@ -119,14 +119,38 @@ else
         {
             <MudTable Items="_pagedResult.Items" Dense="true" Hover="true" Striped="true">
                 <HeaderContent>
-                    <MudTh>Prepare Date</MudTh>
-                    <MudTh>State</MudTh>
-                    <MudTh>Facility</MudTh>
-                    <MudTh>Nationality</MudTh>
-                    <MudTh>Criminality</MudTh>
-                    <MudTh>Status</MudTh>
-                    <MudTh>Departed</MudTh>
-                    <MudTh>Destination</MudTh>
+                    <MudTh aria-sort='@GetAriaSort("PrepareDate")'>
+                        <MudButton OnClick='@(() => SortBy("PrepareDate"))' EndIcon='@GetSortIcon("PrepareDate")'
+                                   Style="text-transform:none; white-space:nowrap;" Size="Size.Small">Prepare Date</MudButton>
+                    </MudTh>
+                    <MudTh aria-sort='@GetAriaSort("State")'>
+                        <MudButton OnClick='@(() => SortBy("State"))' EndIcon='@GetSortIcon("State")'
+                                   Style="text-transform:none; white-space:nowrap;" Size="Size.Small">State</MudButton>
+                    </MudTh>
+                    <MudTh aria-sort='@GetAriaSort("Facility")'>
+                        <MudButton OnClick='@(() => SortBy("Facility"))' EndIcon='@GetSortIcon("Facility")'
+                                   Style="text-transform:none; white-space:nowrap;" Size="Size.Small">Facility</MudButton>
+                    </MudTh>
+                    <MudTh aria-sort='@GetAriaSort("Nationality")'>
+                        <MudButton OnClick='@(() => SortBy("Nationality"))' EndIcon='@GetSortIcon("Nationality")'
+                                   Style="text-transform:none; white-space:nowrap;" Size="Size.Small">Nationality</MudButton>
+                    </MudTh>
+                    <MudTh aria-sort='@GetAriaSort("Criminality")'>
+                        <MudButton OnClick='@(() => SortBy("Criminality"))' EndIcon='@GetSortIcon("Criminality")'
+                                   Style="text-transform:none; white-space:nowrap;" Size="Size.Small">Criminality</MudButton>
+                    </MudTh>
+                    <MudTh aria-sort='@GetAriaSort("Status")'>
+                        <MudButton OnClick='@(() => SortBy("Status"))' EndIcon='@GetSortIcon("Status")'
+                                   Style="text-transform:none; white-space:nowrap;" Size="Size.Small">Status</MudButton>
+                    </MudTh>
+                    <MudTh aria-sort='@GetAriaSort("Departed")'>
+                        <MudButton OnClick='@(() => SortBy("Departed"))' EndIcon='@GetSortIcon("Departed")'
+                                   Style="text-transform:none; white-space:nowrap;" Size="Size.Small">Departed</MudButton>
+                    </MudTh>
+                    <MudTh aria-sort='@GetAriaSort("Destination")'>
+                        <MudButton OnClick='@(() => SortBy("Destination"))' EndIcon='@GetSortIcon("Destination")'
+                                   Style="text-transform:none; white-space:nowrap;" Size="Size.Small">Destination</MudButton>
+                    </MudTh>
                 </HeaderContent>
                 <RowTemplate>
                     <MudTd>@context.PrepareDate.ToString("MM/dd/yyyy")</MudTd>
@@ -186,6 +210,8 @@ else
     private PagedDetainersDto? _pagedResult;
     private int _currentPage = 1;
     private const int PageSize = 50;
+    private string _sortBy = "PrepareDate";
+    private bool _sortDescending = true;
 
     private string? _filterState;
     private string? _filterCountry;
@@ -211,9 +237,26 @@ else
             State: string.IsNullOrWhiteSpace(_filterState) ? null : _filterState.Trim().ToUpper(),
             CitizenshipCountry: string.IsNullOrWhiteSpace(_filterCountry) ? null : _filterCountry.Trim().ToUpper(),
             Criminality: _filterCriminality,
-            ActiveOnly: _filterActiveOnly ? true : null
+            ActiveOnly: _filterActiveOnly ? true : null,
+            SortBy: _sortBy,
+            SortDescending: _sortDescending
         ));
         _loadingData = false;
+    }
+
+    private string GetAriaSort(string column) => _sortBy != column ? "none"
+        : _sortDescending ? "descending" : "ascending";
+
+    private string GetSortIcon(string column) => _sortBy != column ? Icons.Material.Filled.UnfoldMore
+        : _sortDescending ? Icons.Material.Filled.ArrowDownward : Icons.Material.Filled.ArrowUpward;
+
+    private async Task SortBy(string column)
+    {
+        if (_loadingData) return;
+        _sortDescending = _sortBy == column ? !_sortDescending : false;
+        _sortBy = column;
+        _currentPage = 1;
+        await LoadData();
     }
 
     private async Task ApplyFilters()

@@ -365,7 +365,8 @@ public class IceDetainerRepository : Repository<IceDetainer>, IIceDetainerReposi
 
     public async Task<(List<(Guid Id, DateTime PrepareDate, string? State, string? Aor, string? FacilityName, string? Country, string? Criminality, string? CaseStatus, DateTime? DepartedDate, string? DepartureCountry)> Items, int Total)> GetPagedAsync(
         int page, int pageSize, string? state, string? country, string? criminality,
-        string? facilityName, bool? activeOnly, CancellationToken ct = default)
+        string? facilityName, bool? activeOnly, CancellationToken ct = default,
+        string sortBy = "PrepareDate", bool sortDescending = true)
     {
         var query = _context.IceDetainers.AsNoTracking().AsQueryable();
 
@@ -387,8 +388,24 @@ public class IceDetainerRepository : Repository<IceDetainer>, IIceDetainerReposi
 
         var total = await query.CountAsync(ct);
 
-        var items = await query
-            .OrderByDescending(d => d.DetainerPrepareDate)
+        IOrderedQueryable<IceDetainer> Order<T>(System.Linq.Expressions.Expression<Func<IceDetainer, T>> key)
+            => sortDescending ? query.OrderByDescending(key) : query.OrderBy(key);
+
+        var ordered = sortBy switch
+        {
+            "State" => Order(d => d.FacilityState),
+            "Facility" => Order(d => d.DetentionFacilityName),
+            "Nationality" => Order(d => d.CitizenshipCountry),
+            "Criminality" => Order(d => d.DetainerCriminality),
+            // Active precedes Resolved in ascending order, matching the displayed labels.
+            "Status" => Order(d => d.DepartedDate != null),
+            "Departed" => Order(d => d.DepartedDate),
+            "Destination" => Order(d => d.DepartureCountry),
+            _ => Order(d => d.DetainerPrepareDate)
+        };
+
+        var items = await ordered
+            .ThenBy(d => d.Id)
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
             .Select(d => new
