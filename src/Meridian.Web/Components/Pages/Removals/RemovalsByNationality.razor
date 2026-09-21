@@ -36,8 +36,15 @@
             <select style="width:100%; padding:12px; border:1px solid #ccc; border-radius:4px; font-size:14px; margin-top:4px"
                     @onchange="OnSortChanged">
                 <option value="total_desc" selected="@(_sortBy == "total_desc")">Highest Total</option>
+                <option value="total_asc" selected="@(_sortBy == "total_asc")">Lowest Total</option>
                 <option value="criminal_desc" selected="@(_sortBy == "criminal_desc")">Highest Criminal</option>
+                <option value="criminal_asc" selected="@(_sortBy == "criminal_asc")">Lowest Criminal</option>
+                <option value="noncriminal_desc" selected="@(_sortBy == "noncriminal_desc")">Highest Non-Criminal</option>
+                <option value="noncriminal_asc" selected="@(_sortBy == "noncriminal_asc")">Lowest Non-Criminal</option>
+                <option value="percentage_desc" selected="@(_sortBy == "percentage_desc")">Highest Criminal %</option>
+                <option value="percentage_asc" selected="@(_sortBy == "percentage_asc")">Lowest Criminal %</option>
                 <option value="name_asc" selected="@(_sortBy == "name_asc")">Country A-Z</option>
+                <option value="name_desc" selected="@(_sortBy == "name_desc")">Country Z-A</option>
             </select>
         </MudItem>
     </MudGrid>
@@ -54,14 +61,29 @@ else
         @_filtered.Sum(x => x.TotalRemovals).ToString("N0") total removals
     </MudText>
 
-    <MudTable Items="_filtered" Dense="false" Hover="true" Striped="true"
+    <MudTable @ref="_table" Items="_filtered" Dense="false" Hover="true" Striped="true"
               RowsPerPage="25" Elevation="2">
         <HeaderContent>
-            <MudTh>Country</MudTh>
-            <MudTh Style="text-align:right">Total Removals</MudTh>
-            <MudTh Style="text-align:right">Criminal</MudTh>
-            <MudTh Style="text-align:right">Non-Criminal</MudTh>
-            <MudTh Style="text-align:right">Criminal %</MudTh>
+            <MudTh aria-sort='@GetAriaSort("name")'>
+                <MudButton OnClick='@(() => SortByColumn("name"))' EndIcon='@GetSortIcon("name")'
+                           Style="text-transform:none; white-space:nowrap;" Size="Size.Small">Country</MudButton>
+            </MudTh>
+            <MudTh Style="text-align:right" aria-sort='@GetAriaSort("total")'>
+                <MudButton OnClick='@(() => SortByColumn("total"))' EndIcon='@GetSortIcon("total")'
+                           Style="text-transform:none; white-space:nowrap;" Size="Size.Small">Total Removals</MudButton>
+            </MudTh>
+            <MudTh Style="text-align:right" aria-sort='@GetAriaSort("criminal")'>
+                <MudButton OnClick='@(() => SortByColumn("criminal"))' EndIcon='@GetSortIcon("criminal")'
+                           Style="text-transform:none; white-space:nowrap;" Size="Size.Small">Criminal</MudButton>
+            </MudTh>
+            <MudTh Style="text-align:right" aria-sort='@GetAriaSort("noncriminal")'>
+                <MudButton OnClick='@(() => SortByColumn("noncriminal"))' EndIcon='@GetSortIcon("noncriminal")'
+                           Style="text-transform:none; white-space:nowrap;" Size="Size.Small">Non-Criminal</MudButton>
+            </MudTh>
+            <MudTh Style="text-align:right" aria-sort='@GetAriaSort("percentage")'>
+                <MudButton OnClick='@(() => SortByColumn("percentage"))' EndIcon='@GetSortIcon("percentage")'
+                           Style="text-transform:none; white-space:nowrap;" Size="Size.Small">Criminal %</MudButton>
+            </MudTh>
         </HeaderContent>
         <RowTemplate>
             <MudTd>@context.NationalityDisplay</MudTd>
@@ -78,9 +100,7 @@ else
             </MudTd>
             <MudTd Style="text-align:right">
                 @{
-                    var pct = context.TotalRemovals > 0
-                        ? (decimal)context.CriminalRemovals / context.TotalRemovals * 100
-                        : 0;
+                    var pct = CriminalPercentage(context);
                 }
                 <MudChip T="string" Size="Size.Small"
                          Color="@(pct > 50 ? Color.Error : Color.Default)">
@@ -99,6 +119,7 @@ else
     private int _selectedYear = 2022;
     private string _searchCountry = "";
     private string _sortBy = "total_desc";
+    private MudTable<RemovalByNationalityDto>? _table;
 
     private List<int> _years = Enumerable.Range(2013, 10).Reverse().ToList();
     private List<RemovalByNationalityDto> _allData = new();
@@ -132,6 +153,27 @@ else
         StateHasChanged();
     }
 
+    private string GetAriaSort(string column) => _sortBy == $"{column}_asc" ? "ascending"
+        : _sortBy == $"{column}_desc" ? "descending" : "none";
+
+    private string GetSortIcon(string column) => GetAriaSort(column) switch
+    {
+        "ascending" => Icons.Material.Filled.ArrowUpward,
+        "descending" => Icons.Material.Filled.ArrowDownward,
+        _ => Icons.Material.Filled.UnfoldMore
+    };
+
+    private void SortByColumn(string column)
+    {
+        var descending = _sortBy == $"{column}_asc"
+            || (_sortBy != $"{column}_desc" && column != "name");
+        _sortBy = $"{column}_{(descending ? "desc" : "asc")}";
+        FilterData();
+    }
+
+    private static decimal CriminalPercentage(RemovalByNationalityDto row) => row.TotalRemovals > 0
+        ? (decimal)row.CriminalRemovals / row.TotalRemovals * 100 : 0;
+
     private async Task LoadData()
     {
         _loading = true;
@@ -144,17 +186,26 @@ else
 
     private void FilterData()
     {
-        var q = _allData.AsQueryable();
+        IEnumerable<RemovalByNationalityDto> q = _allData;
 
         if (!string.IsNullOrWhiteSpace(_searchCountry))
             q = q.Where(x => x.NationalityDisplay
                 .Contains(_searchCountry, StringComparison.OrdinalIgnoreCase));
 
-        _filtered = _sortBy switch
+        var ordered = _sortBy switch
         {
-            "criminal_desc" => q.OrderByDescending(x => x.CriminalRemovals).ToList(),
-            "name_asc" => q.OrderBy(x => x.NationalityDisplay).ToList(),
-            _ => q.OrderByDescending(x => x.TotalRemovals).ToList()
+            "total_asc" => q.OrderBy(x => x.TotalRemovals),
+            "criminal_desc" => q.OrderByDescending(x => x.CriminalRemovals),
+            "criminal_asc" => q.OrderBy(x => x.CriminalRemovals),
+            "noncriminal_desc" => q.OrderByDescending(x => x.NonCriminalRemovals),
+            "noncriminal_asc" => q.OrderBy(x => x.NonCriminalRemovals),
+            "percentage_desc" => q.OrderByDescending(CriminalPercentage),
+            "percentage_asc" => q.OrderBy(CriminalPercentage),
+            "name_asc" => q.OrderBy(x => x.NationalityDisplay),
+            "name_desc" => q.OrderByDescending(x => x.NationalityDisplay),
+            _ => q.OrderByDescending(x => x.TotalRemovals)
         };
+        _filtered = ordered.ThenBy(x => x.NationalityDisplay).ToList();
+        _table?.NavigateTo(0);
     }
 }
