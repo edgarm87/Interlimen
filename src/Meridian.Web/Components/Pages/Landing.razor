@@ -29,12 +29,14 @@
                 INTERLIMEN
             </a>
             <div style="display:flex; gap:24px; align-items:center;">
-                <a href="/pricing" class="nav-login">Pricing</a>
+                
                 <AuthorizeView>
                     <Authorized>
+                        <a href="/dashboard" class="nav-login">Dashboard</a>
                         <a href="/account/logout" class="footer-link">Sign Out</a>
                     </Authorized>
                     <NotAuthorized>
+                        <a href="/pricing" class="nav-login">Pricing</a>
                         <a href="/account/login" class="footer-link">Sign In →</a>
                     </NotAuthorized>
                 </AuthorizeView>
@@ -64,17 +66,17 @@
             </div>
             <div class="hero-stat-row">
                 <div class="stat">
-                    <span class="stat-num">16.1M</span>
+                    <span class="stat-num">16M+</span>
                     <span class="stat-label">Court proceedings</span>
                 </div>
                 <div class="stat-divider"></div>
                 <div class="stat">
-                    <span class="stat-num">1,327</span>
+                    <span class="stat-num">1K+</span>
                     <span class="stat-label">Immigration judges</span>
                 </div>
                 <div class="stat-divider"></div>
                 <div class="stat">
-                    <span class="stat-num">9.15M</span>
+                    <span class="stat-num">9M+</span>
                     <span class="stat-label">Detention records</span>
                 </div>
                 <div class="stat-divider"></div>
@@ -143,7 +145,7 @@
                 </div>
                 <div class="source">
                     <div class="source-name">EOIR</div>
-                    <div class="source-desc">16.1M court proceedings, 1,327 judges via DOJ FOIA</div>
+                    <div class="source-desc">16M+ court proceedings, 1K+ judges via DOJ FOIA</div>
                 </div>
                 <div class="source">
                     <div class="source-name">OHSS</div>
